@@ -10,12 +10,10 @@ require 'StatsCollect/StatsProxy'
 module StatsCollect
 
   # Stats orders statuses
-  # !!! Those constants are also defined in the RoR website.
   STATS_ORDER_STATUS_TOBEPROCESSED = 0
   STATS_ORDER_STATUS_RECOVERABLE_ERROR = 1
   STATS_ORDER_STATUS_UNRECOVERABLE_ERROR = 2
   # Value types
-  # !!! Those constants are also defined in the RoR website.
   STATS_VALUE_TYPE_INTEGER = 0
   STATS_VALUE_TYPE_FLOAT = 1
   STATS_VALUE_TYPE_PERCENTAGE = 2
@@ -33,6 +31,7 @@ module StatsCollect
       parsePluginsFromDir('Notifiers', "#{File.expand_path(File.dirname(__FILE__))}/Notifiers", 'StatsCollect::Notifiers')
 
       @Backend = nil
+      @BackendInit = false
       @Notifier = nil
       @ConfigFile = nil
       @DisplayHelp = false
@@ -183,7 +182,10 @@ module StatsCollect
         begin
           # Collect statistics
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats..."
-          @BackendInstance.initSession(@Conf[:Backends][@Backend])
+          if (!@BackendInit)
+            @BackendInstance.initSession(@Conf[:Backends][@Backend])
+            @BackendInit = true
+          end
           # Get the stats orders to process
           lFoundOrder = false
           lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
@@ -243,6 +245,20 @@ module StatsCollect
         end
         @NotifierInstance.sendNotification(@Conf[:Notifiers][@Notifier], lMessage)
       end
+    end
+
+    # Enqueue a new stats order
+    #
+    # Parameters:
+    # * *iLstLocations* (<em>list<String></em>): Locations list (can be empty for all locations)
+    # * *iLstObjects* (<em>list<String></em>): Objects list (can be empty for all objects)
+    # * *iLstCategories* (<em>list<String></em>): Categories list (can be empty for all categories)
+    def pushStatsOrder(iLstLocations, iLstObjects, iLstCategories)
+      if (!@BackendInit)
+        @BackendInstance.initSession(@Conf[:Backends][@Backend])
+        @BackendInit = true
+      end
+      @BackendInstance.putNewStatsOrder(DateTime.now, iLstLocations, iLstObjects, iLstCategories, STATS_ORDER_STATUS_TOBEPROCESSED)
     end
 
     private

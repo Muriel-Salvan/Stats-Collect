@@ -118,7 +118,7 @@ module StatsCollect
       # Return:
       # * _Integer_: Its resulting ID
       def addCategory(iCategory, iValueType)
-        @MySQLConnection.query("INSERT INTO stats_categories (name, value_type) VALUES ('#{@MySQLConnection.escape_string(iLocation)}', #{iValueType})")
+        @MySQLConnection.query("INSERT INTO stats_categories (name, value_type) VALUES ('#{@MySQLConnection.escape_string(iCategory)}', #{iValueType})")
 
         return @MySQLConnection.insert_id
       end
