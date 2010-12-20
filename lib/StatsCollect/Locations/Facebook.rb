@@ -42,7 +42,9 @@ module StatsCollect
         lProfilePage = iMechanizeAgent.get('http://www.facebook.com/profile.php')
         lNbrFriends = nil
         lProfilePage.root.css('script').each do |iScriptNode|
-          lMatch = iScriptNode.content.match(/>(\d*) friends<\\\/a><\\\/span>/)
+          lMatch = iScriptNode.content.match(/>Friends \((\d*)\)<\\\/a><\\\/span>/)
+          # The following line is valid for old profiles only
+          #lMatch = iScriptNode.content.match(/>(\d*) friends<\\\/a><\\\/span>/)
           if (lMatch != nil)
             lNbrFriends = Integer(lMatch[1])
             break

@@ -23,8 +23,8 @@ module StatsCollect
         require 'mechanize'
         lMechanizeAgent = Mechanize.new
         lLoginForm = lMechanizeAgent.get('http://www.youtube.com').link_with(:text => 'Sign In').click.forms[1]
-        lLoginForm.Email = 'Muriel.Esteban@GMail.com'
-        lLoginForm.Passwd = 'M[K2LBVu0}xT|b<[<Q")'
+        lLoginForm.Email = iConf[:LoginEMail]
+        lLoginForm.Passwd = iConf[:LoginPassword]
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
         if ((oStatsProxy.isCategoryIncluded?('Video plays')) or
             (oStatsProxy.isCategoryIncluded?('Video likes')) or
@@ -32,6 +32,19 @@ module StatsCollect
             (oStatsProxy.isCategoryIncluded?('Video comments')) or
             (oStatsProxy.isCategoryIncluded?('Video responses')))
           getVideos(oStatsProxy, lMechanizeAgent)
+        end
+        if ((oStatsProxy.isObjectIncluded?('Global')) and
+            ((oStatsProxy.isCategoryIncluded?('Visits')) or
+             (oStatsProxy.isCategoryIncluded?('Followers'))))
+          getOverview(oStatsProxy, lMechanizeAgent)
+        end
+        if ((oStatsProxy.isObjectIncluded?('Global')) and
+            (oStatsProxy.isCategoryIncluded?('Friends')))
+          getFriends(oStatsProxy, lMechanizeAgent)
+        end
+        if ((oStatsProxy.isObjectIncluded?('Global')) and
+            (oStatsProxy.isCategoryIncluded?('Following')))
+          getSubscriptions(oStatsProxy, lMechanizeAgent)
         end
       end
 
@@ -60,6 +73,61 @@ module StatsCollect
           lLstVideosRead << lVideoTitle
         end
         logDebug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
+      end
+
+      # Get the overview statistics
+      #
+      # Parameters:
+      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
+      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
+      def getOverview(oStatsProxy, iMechanizeAgent)
+        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/account_overview')
+        lNbrVisits = nil
+        lNbrFollowers = nil
+        lOverviewPage.root.css('div.statBlock').each do |iStatsSectionNode|
+          lChildrenNodes = iStatsSectionNode.children
+          lChildrenNodes.each_with_index do |iNode, iIdx|
+            if (iNode.content == 'Channel Views:')
+              lNbrVisits = Integer(lChildrenNodes[iIdx+1].content.strip)
+            elsif (iNode.content == 'Subscribers:')
+              lNbrFollowers = Integer(lChildrenNodes[iIdx+1].content.strip)
+            end
+          end
+          if ((lNbrVisits != nil) and
+              (lNbrFollowers != nil))
+            break
+          end
+        end
+        if (lNbrVisits == nil)
+          logErr "Unable to get number of visits: #{lOverviewPage}"
+        elsif (lNbrFollowers == nil)
+          logErr "Unable to get number of followers: #{lOverviewPage}"
+        else
+          oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
+          oStatsProxy.addStat('Global', 'Followers', lNbrFollowers)
+        end
+      end
+
+      # Get the friends statistics
+      #
+      # Parameters:
+      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
+      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
+      def getFriends(oStatsProxy, iMechanizeAgent)
+        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=friends')
+        lNbrFriends = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
+        oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+      end
+
+      # Get the friends statistics
+      #
+      # Parameters:
+      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
+      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
+      def getSubscriptions(oStatsProxy, iMechanizeAgent)
+        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=subscriptions')
+        lNbrFollowing = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
+        oStatsProxy.addStat('Global', 'Following', lNbrFollowing)
       end
 
     end
