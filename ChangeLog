@@ -1,5 +1,12 @@
 = StatsCollect Release History
 
+== 0.1.1.20101220 (Beta)
+
+* Facebook: Adapted code to new profiles.
+* Youtube: Added Following, Followers, Visits and Friends stats.
+* Added a way to push a new stats order using the API.
+* Bug correction: MySQL: Did not work.
+
 == 0.1.0.20101220 (Beta)
 
 * Initial version
