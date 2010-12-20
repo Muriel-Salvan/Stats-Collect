@@ -4,11 +4,6 @@
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
-# Uncomment for PlanetHoster
-#require 'rubygems'
-#ENV['GEM_PATH'] = "/home/murieles/ruby/gems:/home/murieles/.gem/ruby/1.8:/usr/lib/ruby/gems/1.8"
-#Gem.clear_paths
-
 require 'rUtilAnts/Logging'
 RUtilAnts::Logging::initializeLogging('','')
 require 'tmpdir'

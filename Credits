@@ -5,6 +5,11 @@
 * http://www.ruby-lang.org/
 * Thanks a lot Matz for this truly wonderful language !
 
+== rUtilAnts
+* Muriel Salvan (http://murielsalvan.users.sourceforge.net)
+* http://rutilants.sourceforge.net
+* Used for plugins and logging handling.
+
 = Projects used by StatsCollect plugins
 
 == Plugin Backends/MySQL

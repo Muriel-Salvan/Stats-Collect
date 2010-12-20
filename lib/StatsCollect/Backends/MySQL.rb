@@ -36,7 +36,10 @@ module StatsCollect
         rStatus = nil
 
         if (defined?(@LstStatsOrders) == nil)
-          @LstStatsOrders = @MySQLConnection.query('SELECT id, timestamp, objects_list, categories_list, locations_list, status FROM stats_orders WHERE status=0 OR status=1 ORDER BY timestamp DESC')
+          @LstStatsOrders = []
+          @MySQLConnection.query('SELECT id, timestamp, objects_list, categories_list, locations_list, status FROM stats_orders WHERE status=0 OR status=1 ORDER BY timestamp DESC').each do |iRow|
+            @LstStatsOrders << iRow.clone
+          end
         end
         if (!@LstStatsOrders.empty?)
           lID, rTimeStamp, lStrLocations, lStrObjects, lStrCategories, rStatus = @LstStatsOrders.pop
