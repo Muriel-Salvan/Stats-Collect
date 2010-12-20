@@ -1,0 +1,31 @@
+= Projects used by StatsCollect
+
+== Ruby
+* Yukihiro « matz » Matsumoto (http://www.rubyist.net/~matz/)
+* http://www.ruby-lang.org/
+* Thanks a lot Matz for this truly wonderful language !
+
+= Projects used by StatsCollect plugins
+
+== Plugin Backends/MySQL
+
+=== ruby-mysql
+* TOMITA Masahiro (http://www.tmtm.org/)
+* http://www.tmtm.org/en/ruby/mysql/
+* Used to access MySQL databases.
+
+== Plugin Notifiers/SendMail
+
+=== Mail
+* Mikel Lindsaar (http://lindsaar.net/)
+* http://github.com/mikel/mail
+* Used to send notification mails.
+
+== Most Locations plugins
+
+=== Mechanize
+* Mike Dalessio (http://github.com/flavorjones)
+* http://mechanize.rubyforge.org
+* Used to scrap web pages to get statistics.
+
+= People that helped a lot in developing StatsCollect
