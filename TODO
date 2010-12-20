@@ -1,1 +1,2 @@
 * MySpace: Get the user ID by parsing the Profile URL and remove :MySpaceName configuration option.
+* Get all the orders at once, and merge them to call Locations just once per execution.
