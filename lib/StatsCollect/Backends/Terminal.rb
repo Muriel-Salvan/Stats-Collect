@@ -150,6 +150,10 @@ module StatsCollect
         logMsg 'Transaction rollbacked'
       end
 
+      # Close a session of this backend
+      def closeSession
+      end
+      
     end
 
   end

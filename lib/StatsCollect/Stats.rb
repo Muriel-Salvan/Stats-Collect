@@ -182,37 +182,35 @@ module StatsCollect
         begin
           # Collect statistics
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats..."
-          if (!@BackendInit)
-            @BackendInstance.initSession(@Conf[:Backends][@Backend])
-            @BackendInit = true
-          end
-          # Get the stats orders to process
           lFoundOrder = false
-          lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
-          while (lTimeStamp != nil)
-            lFoundOrder = true
-            logInfo "Dequeued stats order: Time: #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}"
-            begin
-              lRecoverableOrders, lUnrecoverableOrders = processOrder(lLstObjects, lLstCategories, lLstLocations)
-              # Add recoverable orders back
-              lRecoverableOrders.each do |iOrderInfo|
-                iLstRecoverableObjects, iLstRecoverableCategories, iLstRecoverableLocations = iOrderInfo
-                logInfo "Enqueue recoverable order: Locations: #{iLstRecoverableLocations.join('|')}, Objects: #{iLstRecoverableObjects.join('|')}, Categories: #{iLstRecoverableCategories.join('|')}"
-                @BackendInstance.putNewStatsOrder(DateTime.now, iLstRecoverableLocations, iLstRecoverableObjects, iLstRecoverableCategories, STATS_ORDER_STATUS_RECOVERABLE_ERROR)
-              end
-              # Add unrecoverable orders back
-              lUnrecoverableOrders.each do |iOrderInfo|
-                iLstUnrecoverableObjects, iLstUnrecoverableCategories, iLstUnrecoverableLocations = iOrderInfo
-                logInfo "Enqueue unrecoverable order: Locations: #{iLstUnrecoverableLocations.join('|')}, Objects: #{iLstUnrecoverableObjects.join('|')}, Categories: #{iLstUnrecoverableCategories.join('|')}"
-                @BackendInstance.putNewStatsOrder(lTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
-              end
-              @BackendInstance.commit
-            rescue Exception
-              @BackendInstance.rollback
-              logErr "Exception while processing order #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
-              rErrorCode = 14
-            end
+          setupBackend do
+            # Get the stats orders to process
             lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
+            while (lTimeStamp != nil)
+              lFoundOrder = true
+              logInfo "Dequeued stats order: Time: #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}"
+              begin
+                lRecoverableOrders, lUnrecoverableOrders = processOrder(lLstObjects, lLstCategories, lLstLocations)
+                # Add recoverable orders back
+                lRecoverableOrders.each do |iOrderInfo|
+                  iLstRecoverableObjects, iLstRecoverableCategories, iLstRecoverableLocations = iOrderInfo
+                  logInfo "Enqueue recoverable order: Locations: #{iLstRecoverableLocations.join('|')}, Objects: #{iLstRecoverableObjects.join('|')}, Categories: #{iLstRecoverableCategories.join('|')}"
+                  @BackendInstance.putNewStatsOrder(DateTime.now + @Conf[:RecoverableErrorsRetryDelay]/86400.0, iLstRecoverableLocations, iLstRecoverableObjects, iLstRecoverableCategories, STATS_ORDER_STATUS_RECOVERABLE_ERROR)
+                end
+                # Add unrecoverable orders back
+                lUnrecoverableOrders.each do |iOrderInfo|
+                  iLstUnrecoverableObjects, iLstUnrecoverableCategories, iLstUnrecoverableLocations = iOrderInfo
+                  logInfo "Enqueue unrecoverable order: Locations: #{iLstUnrecoverableLocations.join('|')}, Objects: #{iLstUnrecoverableObjects.join('|')}, Categories: #{iLstUnrecoverableCategories.join('|')}"
+                  @BackendInstance.putNewStatsOrder(lTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
+                end
+                @BackendInstance.commit
+              rescue Exception
+                @BackendInstance.rollback
+                logErr "Exception while processing order #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
+                rErrorCode = 14
+              end
+              lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
+            end
           end
           if (!lFoundOrder)
             @NotifyUser = false
@@ -254,14 +252,31 @@ module StatsCollect
     # * *iLstObjects* (<em>list<String></em>): Objects list (can be empty for all objects)
     # * *iLstCategories* (<em>list<String></em>): Categories list (can be empty for all categories)
     def pushStatsOrder(iLstLocations, iLstObjects, iLstCategories)
-      if (!@BackendInit)
-        @BackendInstance.initSession(@Conf[:Backends][@Backend])
-        @BackendInit = true
+      setupBackend do
+        @BackendInstance.putNewStatsOrder(DateTime.now, iLstLocations, iLstObjects, iLstCategories, STATS_ORDER_STATUS_TOBEPROCESSED)
       end
-      @BackendInstance.putNewStatsOrder(DateTime.now, iLstLocations, iLstObjects, iLstCategories, STATS_ORDER_STATUS_TOBEPROCESSED)
     end
 
     private
+
+    # Call some code initializing backend before and ensuring it will be closed after.
+    # This method is re-entrant.
+    #
+    # Parameters:
+    # * _CodeBlock_: the code to be called
+    def setupBackend
+      lBackendInitHere = false
+      if (!@BackendInit)
+        @BackendInstance.initSession(@Conf[:Backends][@Backend])
+        @BackendInit = true
+        lBackendInitHere = true
+      end
+      yield
+      if (lBackendInitHere)
+        @BackendInstance.closeSession
+        @BackendInit = false
+      end
+    end
 
     # Process an order
     #

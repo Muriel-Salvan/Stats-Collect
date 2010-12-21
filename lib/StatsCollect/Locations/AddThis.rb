@@ -22,7 +22,7 @@ module StatsCollect
       def execute(oStatsProxy, iConf, iLstObjects, iLstCategories)
         require 'mechanize'
         lMechanizeAgent = Mechanize.new
-        # Get the number of likes from Facebook
+        # Get the number of shares
         if (oStatsProxy.isCategoryIncluded?('Monthly shares'))
           getDomains(oStatsProxy, lMechanizeAgent, iConf, 'month', 'Monthly shares')
         end

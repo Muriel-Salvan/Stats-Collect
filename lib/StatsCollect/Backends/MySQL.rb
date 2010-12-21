@@ -3,6 +3,21 @@
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
+class DateTime
+
+  # Convert this date time to a MySQL time
+  def to_MySQLTime
+    return Mysql::Time.new(
+      self.year,
+      self.month,
+      self.day,
+      self.hour,
+      self.min,
+      self.sec)
+  end
+
+end
+
 module StatsCollect
 
   module Backends
@@ -16,7 +31,13 @@ module StatsCollect
       def initSession(iConf)
         require 'mysql'
         @MySQLConnection = Mysql.new(iConf[:DBHost], iConf[:DBUser], iConf[:DBPassword], iConf[:DBName])
-        # TODO: Use bound variables everywhere !
+        @StatementSelectFromStatsOrders = @MySQLConnection.prepare('SELECT id, timestamp, objects_list, categories_list, locations_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC')
+        @StatementDeleteFromStatsOrders = @MySQLConnection.prepare('DELETE FROM stats_orders WHERE id=?')
+        @StatementInsertIntoStatsLocations = @MySQLConnection.prepare('INSERT INTO stats_locations (name) VALUES (?)')
+        @StatementInsertIntoStatsCategories = @MySQLConnection.prepare('INSERT INTO stats_categories (name, value_type) VALUES (?, ?)')
+        @StatementInsertIntoStatsObjects = @MySQLConnection.prepare('INSERT INTO stats_objects (name) VALUES (?)')
+        @StatementInsertIntoStatsValues = @MySQLConnection.prepare('INSERT INTO stats_values (timestamp, stats_object_id, stats_category_id, stats_location_id, value) VALUES (?, ?, ?, ?, ?)')
+        @StatementInsertIntoStatsOrders = @MySQLConnection.prepare('INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)')
       end
 
       # Get the next stats order.
@@ -37,17 +58,25 @@ module StatsCollect
 
         if (defined?(@LstStatsOrders) == nil)
           @LstStatsOrders = []
-          @MySQLConnection.query('SELECT id, timestamp, objects_list, categories_list, locations_list, status FROM stats_orders WHERE status=0 OR status=1 ORDER BY timestamp DESC').each do |iRow|
+          @StatementSelectFromStatsOrders.execute(DateTime.now.to_MySQLTime)
+          @StatementSelectFromStatsOrders.each do |iRow|
             @LstStatsOrders << iRow.clone
           end
         end
         if (!@LstStatsOrders.empty?)
-          lID, rTimeStamp, lStrLocations, lStrObjects, lStrCategories, rStatus = @LstStatsOrders.pop
+          lID, lMySQLTimeStamp, lStrLocations, lStrObjects, lStrCategories, rStatus = @LstStatsOrders.pop
+          rTimeStamp = DateTime.civil(
+            lMySQLTimeStamp.year,
+            lMySQLTimeStamp.month,
+            lMySQLTimeStamp.day,
+            lMySQLTimeStamp.hour,
+            lMySQLTimeStamp.minute,
+            lMySQLTimeStamp.second)
           rLstLocations = lStrLocations.split('|')
           rLstObjects = lStrObjects.split('|')
           rLstCategories = lStrCategories.split('|')
           @MySQLConnection.query('start transaction')
-          @MySQLConnection.query("DELETE FROM stats_orders WHERE id=#{lID}")
+          @StatementDeleteFromStatsOrders.execute(lID)
         end
 
         return rTimeStamp, rLstLocations, rLstObjects, rLstCategories, rStatus
@@ -105,9 +134,9 @@ module StatsCollect
       # Return:
       # * _Integer_: Its resulting ID
       def addLocation(iLocation)
-        @MySQLConnection.query("INSERT INTO stats_locations (name) VALUES ('#{@MySQLConnection.escape_string(iLocation)}')")
+        @StatementInsertIntoStatsLocations.execute(iLocation)
 
-        return @MySQLConnection.insert_id
+        return @StatementInsertIntoStatsLocations.insert_id
       end
 
       # Add a new category
@@ -118,9 +147,9 @@ module StatsCollect
       # Return:
       # * _Integer_: Its resulting ID
       def addCategory(iCategory, iValueType)
-        @MySQLConnection.query("INSERT INTO stats_categories (name, value_type) VALUES ('#{@MySQLConnection.escape_string(iCategory)}', #{iValueType})")
+        @StatementInsertIntoStatsCategories.execute(iCategory, iValueType)
 
-        return @MySQLConnection.insert_id
+        return @StatementInsertIntoStatsCategories.insert_id
       end
 
       # Add a new object
@@ -130,9 +159,9 @@ module StatsCollect
       # Return:
       # * _Integer_: Its resulting ID
       def addObject(iObject)
-        @MySQLConnection.query("INSERT INTO stats_objects (name) VALUES ('#{@MySQLConnection.escape_string(iObject)}')")
+        @StatementInsertIntoStatsObjects.execute(iObject)
 
-        return @MySQLConnection.insert_id
+        return @StatementInsertIntoStatsObjects.insert_id
       end
 
       # Add a new stat
@@ -161,7 +190,7 @@ module StatsCollect
           lStrValue = iValue.to_s
         end
         # Add the new stat in the DB for real
-        @MySQLConnection.query("INSERT INTO stats_values (timestamp, stats_object_id, stats_category_id, stats_location_id, value) VALUES ('#{iTimeStamp.strftime('%Y-%m-%d %H:%M:%S')}', #{iObjectID}, #{iCategoryID}, #{iLocationID}, '#{lStrValue}')")
+        @StatementInsertIntoStatsValues.execute(iTimeStamp.to_MySQLTime, iObjectID, iCategoryID, iLocationID, lStrValue)
       end
 
       # Add a new stats order
@@ -173,7 +202,14 @@ module StatsCollect
       # * *iLstCategories* (<em>list<String></em>): List of categories
       # * *iStatus* (_Integer_): The order status
       def putNewStatsOrder(iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus)
-        @MySQLConnection.query("INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES ('#{iTimeStamp.strftime('%Y-%m-%d %H:%M:%S')}', '#{@MySQLConnection.escape_string(iLstLocations.join('|'))}', '#{@MySQLConnection.escape_string(iLstObjects.join('|'))}', '#{@MySQLConnection.escape_string(iLstCategories.join('|'))}', #{iStatus})")
+        lMySQLTime = Mysql::Time.new(
+          iTimeStamp.year,
+          iTimeStamp.month,
+          iTimeStamp.day,
+          iTimeStamp.hour,
+          iTimeStamp.min,
+          iTimeStamp.sec)
+        @StatementInsertIntoStatsOrders.execute(lMySQLTime, iLstLocations.join('|'), iLstObjects.join('|'), iLstCategories.join('|'), iStatus)
       end
 
       # Commit the current stats order transaction
@@ -184,6 +220,17 @@ module StatsCollect
       # Rollback the current stats order transaction
       def rollback
         @MySQLConnection.query('rollback')
+      end
+
+      # Close a session of this backend
+      def closeSession
+        @StatementSelectFromStatsOrders.close
+        @StatementDeleteFromStatsOrders.close
+        @StatementInsertIntoStatsLocations.close
+        @StatementInsertIntoStatsCategories.close
+        @StatementInsertIntoStatsObjects.close
+        @StatementInsertIntoStatsValues.close
+        @StatementInsertIntoStatsOrders.close
       end
 
     end

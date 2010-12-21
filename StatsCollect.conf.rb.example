@@ -1,4 +1,7 @@
 {
+  # Delay to apply before retrying recoverable stats orders (number of seconds)
+  :RecoverableErrorsRetryDelay => 300,
+
   # Configuration for Backends
   :Backends => {
     'MySQL' => {
@@ -65,6 +68,10 @@
       :Objects => [
         'www.myhost.com'
       ]
+    },
+    'Youtube' => {
+      :LoginEMail => 'YoutubeLogin',
+      :LoginPassword => '*****'
     },
     'FacebookLike' => {
       # List of objects for which we retrieve the Facebook likes
