@@ -6,6 +6,7 @@
 require 'date'
 require 'optparse'
 require 'StatsCollect/StatsProxy'
+require 'StatsCollect/StatsOrdersProxy'
 
 module StatsCollect
 
@@ -183,37 +184,47 @@ module StatsCollect
           # Collect statistics
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats..."
           lFoundOrder = false
+          lNbrErrors = 0
           setupBackend do
             # Get the stats orders to process
-            lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
-            while (lTimeStamp != nil)
-              lFoundOrder = true
-              logInfo "Dequeued stats order: Time: #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}"
+            lStatsOrdersProxy = StatsOrdersProxy.new
+            @BackendInstance.getStatsOrders(lStatsOrdersProxy)
+            lFoundOrder = (!lStatsOrdersProxy.StatsOrders.empty?)
+            # Process each stats order
+            lStatsOrdersProxy.StatsOrders.each do |iLstIDs, iStatsOrderInfo|
+              iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus = iStatsOrderInfo
+              @BackendInstance.dequeueStatsOrders(iLstIDs)
+              logInfo "Dequeued stats order: IDs: #{iLstIDs.join('|')}, Time: #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}"
               begin
-                lRecoverableOrders, lUnrecoverableOrders = processOrder(lLstObjects, lLstCategories, lLstLocations)
+                lRecoverableOrders, lUnrecoverableOrders = processOrder(iLstObjects, iLstCategories, iLstLocations)
                 # Add recoverable orders back
                 lRecoverableOrders.each do |iOrderInfo|
+                  lNbrErrors += 1
                   iLstRecoverableObjects, iLstRecoverableCategories, iLstRecoverableLocations = iOrderInfo
                   logInfo "Enqueue recoverable order: Locations: #{iLstRecoverableLocations.join('|')}, Objects: #{iLstRecoverableObjects.join('|')}, Categories: #{iLstRecoverableCategories.join('|')}"
                   @BackendInstance.putNewStatsOrder(DateTime.now + @Conf[:RecoverableErrorsRetryDelay]/86400.0, iLstRecoverableLocations, iLstRecoverableObjects, iLstRecoverableCategories, STATS_ORDER_STATUS_RECOVERABLE_ERROR)
                 end
                 # Add unrecoverable orders back
                 lUnrecoverableOrders.each do |iOrderInfo|
+                  lNbrErrors += 1
                   iLstUnrecoverableObjects, iLstUnrecoverableCategories, iLstUnrecoverableLocations = iOrderInfo
                   logInfo "Enqueue unrecoverable order: Locations: #{iLstUnrecoverableLocations.join('|')}, Objects: #{iLstUnrecoverableObjects.join('|')}, Categories: #{iLstUnrecoverableCategories.join('|')}"
-                  @BackendInstance.putNewStatsOrder(lTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
+                  @BackendInstance.putNewStatsOrder(iTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
                 end
                 @BackendInstance.commit
               rescue Exception
+                lNbrErrors += 1
                 @BackendInstance.rollback
-                logErr "Exception while processing order #{lTimeStamp}, Locations: #{lLstLocations.join('|')}, Objects: #{lLstObjects.join('|')}, Categories: #{lLstCategories.join('|')}, Status: #{lStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
+                logErr "Exception while processing order #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
                 rErrorCode = 14
               end
-              lTimeStamp, lLstLocations, lLstObjects, lLstCategories, lStatus = @BackendInstance.getNextStatsOrder
             end
           end
           if (!lFoundOrder)
             @NotifyUser = false
+          end
+          if (lNbrErrors > 0)
+            logErr "#{lNbrErrors} errors were encountered during processing. Please check logs."
           end
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
           File.unlink(lLockFile)

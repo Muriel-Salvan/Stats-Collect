@@ -40,46 +40,40 @@ module StatsCollect
         @StatementInsertIntoStatsOrders = @MySQLConnection.prepare('INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)')
       end
 
-      # Get the next stats order.
-      # Code to begin a new transaction can be set in this method too.
+      # Get the next stats orders.
       #
-      # Return:
-      # * _DateTime_: The time stamp, or nil if no new stats order
-      # * <em>list<String></em>: List of locations
-      # * <em>list<String></em>: List of objects
-      # * <em>list<String></em>: List of categories
-      # * _Integer_: The order status
-      def getNextStatsOrder
-        rTimeStamp = nil
-        rLstLocations = nil
-        rLstObjects = nil
-        rLstCategories = nil
-        rStatus = nil
-
-        if (defined?(@LstStatsOrders) == nil)
-          @LstStatsOrders = []
-          @StatementSelectFromStatsOrders.execute(DateTime.now.to_MySQLTime)
-          @StatementSelectFromStatsOrders.each do |iRow|
-            @LstStatsOrders << iRow.clone
-          end
+      # Parameters:
+      # * *oStatsOrdersProxy* (_StatsOrdersProxy_): The stats orders proxy to be used to give stats orders
+      def getStatsOrders(oStatsOrdersProxy)
+        @StatementSelectFromStatsOrders.execute(DateTime.now.to_MySQLTime)
+        @StatementSelectFromStatsOrders.each do |iRow|
+          iID, iMySQLTimeStamp, iStrLocations, iStrObjects, iStrCategories, iStatus = iRow
+          oStatsOrdersProxy.addStatsOrder(
+            iID,
+            DateTime.civil(
+              iMySQLTimeStamp.year,
+              iMySQLTimeStamp.month,
+              iMySQLTimeStamp.day,
+              iMySQLTimeStamp.hour,
+              iMySQLTimeStamp.minute,
+              iMySQLTimeStamp.second),
+            iStrLocations.split('|'),
+            iStrObjects.split('|'),
+            iStrCategories.split('|'),
+            iStatus)
         end
-        if (!@LstStatsOrders.empty?)
-          lID, lMySQLTimeStamp, lStrLocations, lStrObjects, lStrCategories, rStatus = @LstStatsOrders.pop
-          rTimeStamp = DateTime.civil(
-            lMySQLTimeStamp.year,
-            lMySQLTimeStamp.month,
-            lMySQLTimeStamp.day,
-            lMySQLTimeStamp.hour,
-            lMySQLTimeStamp.minute,
-            lMySQLTimeStamp.second)
-          rLstLocations = lStrLocations.split('|')
-          rLstObjects = lStrObjects.split('|')
-          rLstCategories = lStrCategories.split('|')
-          @MySQLConnection.query('start transaction')
-          @StatementDeleteFromStatsOrders.execute(lID)
-        end
+      end
 
-        return rTimeStamp, rLstLocations, rLstObjects, rLstCategories, rStatus
+      # Dequeue the given stat orders IDs.
+      # Code to begin a new transaction can be set in this method too. In this case, the dequeue should be part of the transaction, or it will have to be re-enqueued during rollback method call (otherwise orders will be lost).
+      #
+      # Parameters:
+      # * *iLstStatsOrderIDs* (<em>list<Integer></em>): The list of stats order IDs to dequeue
+      def dequeueStatsOrders(iLstStatsOrderIDs)
+        @MySQLConnection.query('start transaction')
+        iLstStatsOrderIDs.each do |iStatsOrderID|
+          @StatementDeleteFromStatsOrders.execute(iStatsOrderID)
+        end
       end
 
       # Get the list of known locations

@@ -15,34 +15,26 @@ module StatsCollect
       # * *iConf* (<em>map<Symbol,Object></em>): Configuration of this backend
       def initSession(iConf)
         @IdxID = 0
+        logMsg 'Session initialized.'
       end
 
-      # Get the next stats order.
-      # Code to begin a new transaction can be set in this method too.
+      # Get the next stats orders.
       #
-      # Return:
-      # * _DateTime_: The time stamp, or nil if no new stats order
-      # * <em>list<String></em>: List of locations
-      # * <em>list<String></em>: List of objects
-      # * <em>list<String></em>: List of categories
-      # * _Integer_: The order status
-      def getNextStatsOrder
-        rTimeStamp = nil
-        rLstLocations = nil
-        rLstObjects = nil
-        rLstCategories = nil
-        rStatus = nil
+      # Parameters:
+      # * *oStatsOrdersProxy* (_StatsOrdersProxy_): The stats orders proxy to be used to give stats orders
+      def getStatsOrders(oStatsOrdersProxy)
+#        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, [], [], [], STATS_ORDER_STATUS_TOBEPROCESSED)
+        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, ['MySpace'], [], ['Friends list'], STATS_ORDER_STATUS_TOBEPROCESSED)
+        logMsg 'Added stats order 0.'
+      end
 
-        if (defined?(@LstStatsOrders) == nil)
-          @LstStatsOrders = [
-            [ DateTime.now, [], [], [], STATS_ORDER_STATUS_TOBEPROCESSED ]
-          ]
-        end
-        if (!@LstStatsOrders.empty?)
-          rTimeStamp, rLstLocations, rLstObjects, rLstCategories, rStatus = @LstStatsOrders.pop
-        end
-
-        return rTimeStamp, rLstLocations, rLstObjects, rLstCategories, rStatus
+      # Dequeue the given stat orders IDs.
+      # Code to begin a new transaction can be set in this method too. In this case, the dequeue should be part of the transaction, or it will have to be re-enqueued during rollback method call (otherwise orders will be lost).
+      #
+      # Parameters:
+      # * *iLstStatsOrderIDs* (<em>list<Integer></em>): The list of stats order IDs to dequeue
+      def dequeueStatsOrders(iLstStatsOrderIDs)
+        logMsg "Transaction started and stats orders dequeued: #{iLstStatsOrderIDs.join(', ')}"
       end
 
       # Get the list of known locations
