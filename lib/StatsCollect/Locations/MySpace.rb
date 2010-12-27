@@ -30,14 +30,17 @@ module StatsCollect
         lLoginForm.Password = iConf[:LoginPassword]
         # Submit to get to the home page
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first)
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            (oStatsProxy.isCategoryIncluded?('Comments')))
-          getProfile(oStatsProxy, lMechanizeAgent)
-        end
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            ((oStatsProxy.isCategoryIncluded?('Friends')) or
-             (oStatsProxy.isCategoryIncluded?('Visits'))))
-          getDashboard(oStatsProxy, lMechanizeAgent)
+        if (oStatsProxy.isObjectIncluded?('Global'))
+          if (oStatsProxy.isCategoryIncluded?('Comments'))
+            getProfile(oStatsProxy, lMechanizeAgent)
+          end
+          if ((oStatsProxy.isCategoryIncluded?('Friends')) or
+              (oStatsProxy.isCategoryIncluded?('Visits')))
+            getDashboard(oStatsProxy, lMechanizeAgent)
+          end
+          if (oStatsProxy.isCategoryIncluded?('Friends list'))
+            getFriendsList(oStatsProxy, lMechanizeAgent)
+          end
         end
         if (oStatsProxy.isCategoryIncluded?('Song plays'))
           getSongs(oStatsProxy, lMechanizeAgent)
@@ -215,6 +218,54 @@ module StatsCollect
           lLstBlogsRead << lBlogTitle
         end
         logDebug "#{lLstBlogsRead.size} blogs read: #{lLstBlogsRead.join(', ')}"
+      end
+
+      # Get the friends list
+      #
+      # Parameters:
+      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
+      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
+      def getFriendsList(oStatsProxy, iMechanizeAgent)
+        lLstFriends = []
+        lLstIDS = []
+        lFriendsPage = iMechanizeAgent.get('http://www.myspace.com/my/friends/grid/page/1')
+        # Keep track of the last first friend of the page, as we will detect ending page thanks to it.
+        lLastFirstFriend = nil
+        lIdxPage = 2
+        while (lFriendsPage != nil)
+          lFirstFriend = nil
+          lFriendsPage.root.css('ul.myDataList li').each do |iFriendNode|
+            if (iFriendNode['data-id'] != nil)
+              lLstIDS << iFriendNode['data-id']
+            end
+          end
+          lFriendsPage.root.css('ul.myDataList li div div.vcard span.hcard a.nickname').each do |iFriendLinkNode|
+            lFriendName = iFriendLinkNode['href'][1..-1]
+            if (lFirstFriend == nil)
+              # Check if the page has not changed
+              if (lLastFirstFriend == lFriendName)
+                # Finished
+                break
+              end
+              lFirstFriend = lFriendName
+            end
+            lLstFriends << lFriendName
+          end
+          lLastFirstFriend = lFirstFriend
+          # Get next page if we did not reach the end
+          if (lLastFirstFriend == nil)
+            lFriendsPage = nil
+          else
+            lFriendsPage = iMechanizeAgent.get("http://www.myspace.com/my/friends/grid/page/#{lIdxPage}")
+            lIdxPage += 1
+          end
+        end
+        # Map of stored information
+        lStoredMap = {}
+        lLstIDS.each_with_index do |iID, iIdx|
+          lStoredMap[iID] = lLstFriends[iIdx]
+        end
+        oStatsProxy.addStat('Global', 'Friends list', lStoredMap)
       end
 
     end

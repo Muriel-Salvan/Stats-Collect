@@ -19,6 +19,7 @@ module StatsCollect
   STATS_VALUE_TYPE_FLOAT = 1
   STATS_VALUE_TYPE_PERCENTAGE = 2
   STATS_VALUE_TYPE_UNKNOWN = 3
+  STATS_VALUE_TYPE_MAP = 4
 
   class Stats
 
@@ -231,6 +232,12 @@ module StatsCollect
         rescue Exception
           logErr "Exception thrown while collecting stats: #{$!}.\n#{$!.backtrace.join("\n")}"
           rErrorCode = 15
+          begin
+            File.unlink(lLockFile)
+          rescue Exception
+            logErr "Exception thrown while deleting lock file: #{$!}\n#{$!.backtrace.join("\n")}"
+            rErrorCode = 16
+          end
           @NotifyUser = true
         end
       end

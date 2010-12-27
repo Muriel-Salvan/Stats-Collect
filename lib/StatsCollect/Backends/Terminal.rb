@@ -23,8 +23,8 @@ module StatsCollect
       # Parameters:
       # * *oStatsOrdersProxy* (_StatsOrdersProxy_): The stats orders proxy to be used to give stats orders
       def getStatsOrders(oStatsOrdersProxy)
-#        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, [], [], [], STATS_ORDER_STATUS_TOBEPROCESSED)
-        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, ['MySpace'], [], ['Friends list'], STATS_ORDER_STATUS_TOBEPROCESSED)
+        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, [], [], [], STATS_ORDER_STATUS_TOBEPROCESSED)
+#        oStatsOrdersProxy.addStatsOrder(0, DateTime.now, ['MySpace'], [], ['Friends list'], STATS_ORDER_STATUS_TOBEPROCESSED)
         logMsg 'Added stats order 0.'
       end
 

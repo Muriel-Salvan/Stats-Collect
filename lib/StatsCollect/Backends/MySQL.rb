@@ -3,6 +3,8 @@
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
+require 'zlib'
+
 class DateTime
 
   # Convert this date time to a MySQL time
@@ -24,6 +26,15 @@ module StatsCollect
 
     class MySQL
 
+      # Constants used to represent differencial data storage
+      DIFFDATA_KEY = 'K'
+      DIFFDATA_MERGE = 'M'
+      DIFFDATA_DELETE = 'D'
+      DIFFDATA_MODIFY = 'O'
+      DIFFDATA_SAME = 'S'
+      # Number of maximal rows to store data differences before creating a new data key
+      DIFFDATA_MAX_NUMBER_OF_ROWS = 20
+
       # Initialize a session of this backend
       #
       # Parameters:
@@ -31,13 +42,18 @@ module StatsCollect
       def initSession(iConf)
         require 'mysql'
         @MySQLConnection = Mysql.new(iConf[:DBHost], iConf[:DBUser], iConf[:DBPassword], iConf[:DBName])
-        @StatementSelectFromStatsOrders = @MySQLConnection.prepare('SELECT id, timestamp, objects_list, categories_list, locations_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC')
+        @StatementSelectFromStatsOrders = @MySQLConnection.prepare('SELECT id, timestamp, locations_list, objects_list, categories_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC')
         @StatementDeleteFromStatsOrders = @MySQLConnection.prepare('DELETE FROM stats_orders WHERE id=?')
         @StatementInsertIntoStatsLocations = @MySQLConnection.prepare('INSERT INTO stats_locations (name) VALUES (?)')
         @StatementInsertIntoStatsCategories = @MySQLConnection.prepare('INSERT INTO stats_categories (name, value_type) VALUES (?, ?)')
         @StatementInsertIntoStatsObjects = @MySQLConnection.prepare('INSERT INTO stats_objects (name) VALUES (?)')
-        @StatementInsertIntoStatsValues = @MySQLConnection.prepare('INSERT INTO stats_values (timestamp, stats_object_id, stats_category_id, stats_location_id, value) VALUES (?, ?, ?, ?, ?)')
+        @StatementInsertIntoStatsValues = @MySQLConnection.prepare('INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
+        @StatementInsertIntoStatsBinaryValues = @MySQLConnection.prepare('INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
         @StatementInsertIntoStatsOrders = @MySQLConnection.prepare('INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)')
+        @StatementSelectFromStatsLastKeys = @MySQLConnection.prepare('SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
+        @StatementSelectFromStatsBinaryValues = @MySQLConnection.prepare('SELECT id, value FROM stats_binary_values WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ? AND id >= ? ORDER BY id')
+        @StatementInsertIntoStatsLastKeys = @MySQLConnection.prepare('INSERT INTO stats_last_keys (stats_location_id, stats_object_id, stats_category_id, stats_value_id) VALUES (?, ?, ?, ?)')
+        @StatementUpdateStatsLastKeys = @MySQLConnection.prepare('UPDATE stats_last_keys SET stats_value_id = ? WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
       end
 
       # Get the next stats orders.
@@ -168,6 +184,10 @@ module StatsCollect
       # * *iValue* (_Object_): The value to store
       # * *iValueType* (_Integer_): The value type
       def addStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValue, iValueType)
+        # Do we need to store this value ID in the last keys ?
+        lStoreInLastKeys = false
+        lExistingLastKey = false
+        lInsertStatement = @StatementInsertIntoStatsValues
         # Convert the value to its internal representation
         lStrValue = nil
         case iValueType
@@ -179,12 +199,97 @@ module StatsCollect
           lStrValue = iValue.to_s
         when STATS_VALUE_TYPE_UNKNOWN
           lStrValue = iValue.to_s
+        when STATS_VALUE_TYPE_MAP
+          lInsertStatement = @StatementInsertIntoStatsBinaryValues
+          # This is a special case:
+          # We retrieve the last value of this statistic, and decide if we write it completely, or just write a diff.
+          lLastKeyStatsValueID = nil
+          @StatementSelectFromStatsLastKeys.execute(iLocationID, iObjectID, iCategoryID)
+          # Should be only 1 row, or none
+          @StatementSelectFromStatsLastKeys.each do |iRow|
+            lLastKeyStatsValueID = iRow[0]
+          end
+          if (lLastKeyStatsValueID == nil)
+            # First value to store: store a key
+            lStrValue = "#{DIFFDATA_KEY}#{Zlib::Deflate.new.deflate(Marshal.dump(iValue), Zlib::FINISH)}"
+            lStoreInLastKeys = true
+          else
+            # There was already a previous key for this value.
+            lExistingLastKey = true
+            # Reconstruct the value by getting all the stats_values since this key.
+            lExistingValue = nil
+            @StatementSelectFromStatsBinaryValues.execute(iLocationID, iObjectID, iCategoryID, lLastKeyStatsValueID)
+            # If too much rows, we just create a new key
+            if (@StatementSelectFromStatsBinaryValues.num_rows >= DIFFDATA_MAX_NUMBER_OF_ROWS)
+              lStrValue = "#{DIFFDATA_KEY}#{Zlib::Deflate.new.deflate(Marshal.dump(iValue), Zlib::FINISH)}"
+              lStoreInLastKeys = true
+            else
+              @StatementSelectFromStatsBinaryValues.each do |iRow|
+                iID, iRowValue = iRow
+                # Read the type of this diff data
+                case iRowValue[0..0]
+                when DIFFDATA_KEY
+                  lExistingValue = Marshal.load(Zlib::Inflate.new.inflate(iRowValue[1..-1]))
+                when DIFFDATA_MERGE
+                  lExistingValue.merge(Marshal.load(iRowValue[1..-1]))
+                when DIFFDATA_DELETE
+                  lValuesToDelete = Marshal.load(iRowValue[1..-1])
+                  lExistingValue.delete_if do |iKey, iValue|
+                    next (lValuesToDelete.include?(iKey))
+                  end
+                when DIFFDATA_MODIFY
+                  lValuesToDelete, lValuesToModify = Marshal.load(iRowValue[1..-1])
+                  lExistingValue.delete_if do |iKey, iValue|
+                    next (lValuesToDelete.include?(iKey))
+                  end
+                  lExistingValue.merge(lValuesToModify)
+                when DIFFDATA_SAME
+                  # Nothing to do
+                else
+                  logErr "Unknown diff value type: #{iRowValue[0..0]}"
+                  raise RuntimeError.new("Unknown diff value type: #{iRowValue[0..0]}")
+                end
+              end
+              # Now compute the difference between the existing value and the new one
+              lValuesToDelete = []
+              lValuesToModify = {}
+              iValue.each do |iKey, iNewValue|
+                if (lExistingValue.has_key?(iKey))
+                  if (iNewValue != lExistingValue[iKey])
+                    lValuesToModify[iKey] = iNewValue
+                  end
+                else
+                  lValuesToDelete << iKey
+                end
+              end
+              if (lValuesToDelete.empty?)
+                if (lValuesToModify.empty?)
+                  lStrValue = DIFFDATA_SAME
+                else
+                  lStrValue = "#{DIFFDATA_MERGE}#{Marshal.dump(lValuesToModify)}"
+                end
+              elsif (lValuesToModify.empty?)
+                lStrValue = "#{DIFFDATA_DELETE}#{Marshal.dump(lValuesToDelete)}"
+              else
+                lStrValue = "#{DIFFDATA_MODIFY}#{Marshal.dump([lValuesToDelete,lValuesToModify])}"
+              end
+            end
+          end
         else
           logErr "Unknown category value type: #{iValueType}. It will be treated as Unknown."
           lStrValue = iValue.to_s
         end
         # Add the new stat in the DB for real
-        @StatementInsertIntoStatsValues.execute(iTimeStamp.to_MySQLTime, iObjectID, iCategoryID, iLocationID, lStrValue)
+        lInsertStatement.execute(iTimeStamp.to_MySQLTime, iLocationID, iObjectID, iCategoryID, lStrValue)
+        # Store the last key idf needed
+        if (lStoreInLastKeys)
+          lNewStatValueID = lInsertStatement.insert_id
+          if (lExistingLastKey)
+            @StatementUpdateStatsLastKeys.execute(lNewStatValueID, iLocationID, iObjectID, iCategoryID)
+          else
+            @StatementInsertIntoStatsLastKeys.execute(iLocationID, iObjectID, iCategoryID, lNewStatValueID)
+          end
+        end
       end
 
       # Add a new stats order
@@ -224,7 +329,12 @@ module StatsCollect
         @StatementInsertIntoStatsCategories.close
         @StatementInsertIntoStatsObjects.close
         @StatementInsertIntoStatsValues.close
+        @StatementInsertIntoStatsBinaryValues.close
         @StatementInsertIntoStatsOrders.close
+        @StatementSelectFromStatsLastKeys.close
+        @StatementSelectFromStatsBinaryValues.close
+        @StatementInsertIntoStatsLastKeys.close
+        @StatementUpdateStatsLastKeys.close
       end
 
     end
