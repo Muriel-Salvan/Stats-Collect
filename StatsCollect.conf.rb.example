@@ -94,5 +94,12 @@
         'GoogleSearchString'
       ]
     },
+    'GoogleGroup' => {
+      :LoginEMail => 'GoogleGroupLogin',
+      :LoginPassword => '*****',
+      :Objects => [
+        'GoogleGroupName'
+      ]
+    }
   }
 }
