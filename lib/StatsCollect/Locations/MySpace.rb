@@ -226,30 +226,34 @@ module StatsCollect
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getFriendsList(oStatsProxy, iMechanizeAgent)
-        lLstFriends = []
-        lLstIDS = []
         lFriendsPage = iMechanizeAgent.get('http://www.myspace.com/my/friends/grid/page/1')
         # Keep track of the last first friend of the page, as we will detect ending page thanks to it.
         lLastFirstFriend = nil
+        lFriendsMap = {}
         lIdxPage = 2
         while (lFriendsPage != nil)
           lFirstFriend = nil
           lFriendsPage.root.css('ul.myDataList li').each do |iFriendNode|
             if (iFriendNode['data-id'] != nil)
-              lLstIDS << iFriendNode['data-id']
-            end
-          end
-          lFriendsPage.root.css('ul.myDataList li div div.vcard span.hcard a.nickname').each do |iFriendLinkNode|
-            lFriendName = iFriendLinkNode['href'][1..-1]
-            if (lFirstFriend == nil)
-              # Check if the page has not changed
-              if (lLastFirstFriend == lFriendName)
-                # Finished
-                break
+              # We have a friend node
+              lFriendID = iFriendNode['data-id']
+              lFriendName = nil
+              iFriendNode.css('div div.vcard span.hcard a.nickname').each do |iFriendLinkNode|
+                lFriendName = iFriendLinkNode['href'][1..-1]
+                if (lFriendName == nil)
+                  logErr "Could not get friend's name for ID #{lFriendID}: #{iFriendLinkNode}"
+                end
+                lFriendsMap[lFriendID] = lFriendName
               end
-              lFirstFriend = lFriendName
+              if (lFirstFriend == nil)
+                # Check if the page has not changed
+                if (lLastFirstFriend == lFriendID)
+                  # Finished
+                  break
+                end
+                lFirstFriend = lFriendID
+              end
             end
-            lLstFriends << lFriendName
           end
           lLastFirstFriend = lFirstFriend
           # Get next page if we did not reach the end
@@ -260,12 +264,7 @@ module StatsCollect
             lIdxPage += 1
           end
         end
-        # Map of stored information
-        lStoredMap = {}
-        lLstIDS.each_with_index do |iID, iIdx|
-          lStoredMap[iID] = lLstFriends[iIdx]
-        end
-        oStatsProxy.addStat('Global', 'Friends list', lStoredMap)
+        oStatsProxy.addStat('Global', 'Friends list', lFriendsMap)
       end
 
     end

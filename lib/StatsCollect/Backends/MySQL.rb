@@ -252,26 +252,34 @@ module StatsCollect
               end
               # Now compute the difference between the existing value and the new one
               lValuesToDelete = []
-              lValuesToModify = {}
+              lValuesToMerge = {}
               iValue.each do |iKey, iNewValue|
                 if (lExistingValue.has_key?(iKey))
                   if (iNewValue != lExistingValue[iKey])
-                    lValuesToModify[iKey] = iNewValue
+                    # A modified value: add it
+                    lValuesToMerge[iKey] = iNewValue
                   end
                 else
+                  # A new value: add it
+                  lValuesToMerge[iKey] = iNewValue
+                end
+              end
+              lExistingValue.each do |iKey, iExistingValue|
+                if (!iValue.has_key?(iKey))
+                  # A missing value: delete it
                   lValuesToDelete << iKey
                 end
               end
               if (lValuesToDelete.empty?)
-                if (lValuesToModify.empty?)
+                if (lValuesToMerge.empty?)
                   lStrValue = DIFFDATA_SAME
                 else
-                  lStrValue = "#{DIFFDATA_MERGE}#{Marshal.dump(lValuesToModify)}"
+                  lStrValue = "#{DIFFDATA_MERGE}#{Marshal.dump(lValuesToMerge)}"
                 end
-              elsif (lValuesToModify.empty?)
+              elsif (lValuesToMerge.empty?)
                 lStrValue = "#{DIFFDATA_DELETE}#{Marshal.dump(lValuesToDelete)}"
               else
-                lStrValue = "#{DIFFDATA_MODIFY}#{Marshal.dump([lValuesToDelete,lValuesToModify])}"
+                lStrValue = "#{DIFFDATA_MODIFY}#{Marshal.dump([lValuesToDelete,lValuesToMerge])}"
               end
             end
           end
