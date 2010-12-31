@@ -220,7 +220,9 @@ module StatsCollect
             lExistingValue = nil
             @StatementSelectFromStatsBinaryValues.execute(iLocationID, iObjectID, iCategoryID, lLastKeyStatsValueID)
             # If too much rows, we just create a new key
-            if (@StatementSelectFromStatsBinaryValues.num_rows >= DIFFDATA_MAX_NUMBER_OF_ROWS)
+            lNbrRows = @StatementSelectFromStatsBinaryValues.num_rows
+            if ((lNbrRows == 0) or
+                (lNbrRows >= DIFFDATA_MAX_NUMBER_OF_ROWS))
               lStrValue = "#{DIFFDATA_KEY}#{Zlib::Deflate.new.deflate(Marshal.dump(iValue), Zlib::FINISH)}"
               lStoreInLastKeys = true
             else
@@ -231,7 +233,7 @@ module StatsCollect
                 when DIFFDATA_KEY
                   lExistingValue = Marshal.load(Zlib::Inflate.new.inflate(iRowValue[1..-1]))
                 when DIFFDATA_MERGE
-                  lExistingValue.merge(Marshal.load(iRowValue[1..-1]))
+                  lExistingValue.merge!(Marshal.load(iRowValue[1..-1]))
                 when DIFFDATA_DELETE
                   lValuesToDelete = Marshal.load(iRowValue[1..-1])
                   lExistingValue.delete_if do |iKey, iValue|
@@ -242,7 +244,7 @@ module StatsCollect
                   lExistingValue.delete_if do |iKey, iValue|
                     next (lValuesToDelete.include?(iKey))
                   end
-                  lExistingValue.merge(lValuesToModify)
+                  lExistingValue.merge!(lValuesToModify)
                 when DIFFDATA_SAME
                   # Nothing to do
                 else
