@@ -192,7 +192,7 @@ module StatsCollect
         end
         begin
           # Collect statistics
-          logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats..."
+          logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats (PID #{Process.pid})..."
           lFoundOrder = false
           lNbrErrors = 0
           setupBackend do
