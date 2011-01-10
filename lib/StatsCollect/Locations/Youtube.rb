@@ -88,9 +88,9 @@ module StatsCollect
           lChildrenNodes = iStatsSectionNode.children
           lChildrenNodes.each_with_index do |iNode, iIdx|
             if (iNode.content == 'Channel Views:')
-              lNbrVisits = Integer(lChildrenNodes[iIdx+1].content.strip)
+              lNbrVisits = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(/,/,''))
             elsif (iNode.content == 'Subscribers:')
-              lNbrFollowers = Integer(lChildrenNodes[iIdx+1].content.strip)
+              lNbrFollowers = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(/,/,''))
             end
           end
           if ((lNbrVisits != nil) and

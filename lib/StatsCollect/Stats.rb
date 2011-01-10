@@ -167,12 +167,21 @@ module StatsCollect
             lDetails = eval(iFile.read)
           end
           logErr "Details of the running instance: #{lDetails.inspect}"
-          rErrorCode = 12
+          # If the process does not exist anymore, remove the lock file
+          # TODO: Adapt this to non Unix systems
+          if (!File.exists?("/proc/#{lDetails[:PID]}"))
+            logErr "Process #{lDetails[:PID]} does not exist anymore. Removing lock file."
+            File.unlink(lLockFile)
+            # Do not set lErrorCode, as we want the processing to continue
+          else
+            rErrorCode = 12
+          end
         rescue Exception
           logErr "Invalid lock file #{lLockFile}: #{$!}."
           rErrorCode = 13
         end
-      else
+      end
+      if (rErrorCode == 0)
         File.open(lLockFile, 'w') do |oFile|
           oFile << "
             {
