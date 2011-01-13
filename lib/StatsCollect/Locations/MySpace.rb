@@ -78,8 +78,8 @@ module StatsCollect
       def getDashboard(oStatsProxy, iMechanizeAgent)
         # Get the dashboard page
         lJSonData = eval(iMechanizeAgent.get_file('http://www.myspace.com/stats/fans_json/profile_stats/en-US/x=0').gsub(':','=>'))
-        lNbrVisits = lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_views') }.first[-1]
-        lNbrFriends = lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_friends') }.first[-1]
+        lNbrVisits = Integer(lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_views') }.first[-1].gsub(',',''))
+        lNbrFriends = Integer(lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_friends') }.first[-1].gsub(',',''))
         oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
         oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
 

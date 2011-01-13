@@ -285,6 +285,8 @@ module StatsCollect
               end
             end
           end
+        when STATS_VALUE_TYPE_STRING
+          lStrValue = iValue
         else
           logErr "Unknown category value type: #{iValueType}. It will be treated as Unknown."
           lStrValue = iValue.to_s

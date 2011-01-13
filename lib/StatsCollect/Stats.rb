@@ -20,6 +20,7 @@ module StatsCollect
   STATS_VALUE_TYPE_PERCENTAGE = 2
   STATS_VALUE_TYPE_UNKNOWN = 3
   STATS_VALUE_TYPE_MAP = 4
+  STATS_VALUE_TYPE_STRING = 5
 
   class Stats
 
@@ -191,6 +192,9 @@ module StatsCollect
           "
         end
         begin
+          # The list of errors
+          lLstErrors = []
+          setLogErrorsStack(lLstErrors)
           # Collect statistics
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats (PID #{Process.pid})..."
           lFoundOrder = false
@@ -233,8 +237,12 @@ module StatsCollect
           if (!lFoundOrder)
             @NotifyUser = false
           end
+          setLogErrorsStack(nil)
           if (lNbrErrors > 0)
-            logErr "#{lNbrErrors} errors were encountered during processing. Please check logs."
+            logErr "#{lNbrErrors} orders were put in error during processing. Please check logs."
+          end
+          if (!lLstErrors.empty?)
+            logErr "#{lLstErrors.size} errors were reported:\n\n* ERROR: #{lLstErrors.join("\n\n")}"
           end
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
           File.unlink(lLockFile)
