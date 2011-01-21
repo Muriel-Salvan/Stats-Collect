@@ -22,6 +22,8 @@ module StatsCollect
       def execute(oStatsProxy, iConf, iLstObjects, iLstCategories)
         require 'mechanize'
         lMechanizeAgent = Mechanize.new
+        # Set a specific user agent, as Facebook will treat our agent as a mobile one
+        lMechanizeAgent.user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 6.1; fr; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13'
         lLoginForm = lMechanizeAgent.get('http://www.facebook.com').forms[0]
         lLoginForm.email = iConf[:LoginEMail]
         lLoginForm.pass = iConf[:LoginPassword]
@@ -42,7 +44,7 @@ module StatsCollect
         lProfilePage = iMechanizeAgent.get('http://www.facebook.com/profile.php')
         lNbrFriends = nil
         lProfilePage.root.css('script').each do |iScriptNode|
-          lMatch = iScriptNode.content.match(/>Friends \((\d*)\)<\\\/a><\\\/span>/)
+          lMatch = iScriptNode.content.match(/>Friends \((\d*)\)/)
           # The following line is valid for old profiles only
           #lMatch = iScriptNode.content.match(/>(\d*) friends<\\\/a><\\\/span>/)
           if (lMatch != nil)
