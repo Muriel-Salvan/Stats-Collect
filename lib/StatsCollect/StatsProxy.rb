@@ -25,8 +25,10 @@ module StatsCollect
     # Parameters:
     # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
     # * *iLstCategories* (<em>list<String></em>): List of categories to filter (can be empty for all)
-    def initialize(iLstObjects, iLstCategories)
-      @LstObjects, @LstCategories = iLstObjects, iLstCategories
+    # * *iBackend* (_Object_): The backend
+    # * *iLocation* (_String_): Name of the default location
+    def initialize(iLstObjects, iLstCategories, iBackend, iLocation)
+      @LstObjects, @LstCategories, @Backend, @Location = iLstObjects, iLstCategories, iBackend, iLocation
       @RecoverableOrders = []
       @UnrecoverableOrders = []
       @StatsToAdd = []
@@ -74,9 +76,15 @@ module StatsCollect
     # * *iObject* (_String_): The object
     # * *iCategory* (_String_): The category
     # * *iValue* (_Object_): The value
-    def addStat(iObject, iCategory, iValue)
+    # * *iOptions* (<em>map<Symbol,Object></em>): Additional options [optional = {}]:
+    # ** *:Timestamp* (_DateTime_): Time stamp of this stat [optional = DateTime.now]
+    # ** *:Location* (_String_): Location of this stat [optional = <PluginName>]
+    def addStat(iObject, iCategory, iValue, iOptions = {})
+      lTimestamp = (iOptions[:Timestamp] || DateTime.now)
+      lLocation = (iOptions[:Location] || @Location)
       @StatsToAdd << [
-        DateTime.now,
+        lTimestamp,
+        lLocation,
         iObject,
         iCategory,
         iValue
@@ -99,6 +107,30 @@ module StatsCollect
     # * *iLstCategories* (<em>list<String></em>): The failing categories
     def addUnrecoverableOrder(iLstObjects, iLstCategories)
       @UnrecoverableOrders << [ iLstObjects, iLstCategories ]
+    end
+
+    # Get the list of categories
+    #
+    # Return:
+    # * <em>map<String,[Integer,Integer]></em>: The list of categories and their associated ID and value type
+    def getCategories
+      return @Backend.getKnownCategories
+    end
+
+    # Get the list of objects
+    #
+    # Return:
+    # * <em>map<String,Integer></em>: The list of objects and their associated ID
+    def getObjects
+      return @Backend.getKnownObjects
+    end
+
+    # Get the list of locations
+    #
+    # Return:
+    # * <em>map<String,Integer></em>: The list of locations and their associated ID
+    def getLocations
+      return @Backend.getKnownLocations
     end
 
   end

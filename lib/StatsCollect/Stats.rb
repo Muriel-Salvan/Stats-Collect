@@ -242,7 +242,7 @@ module StatsCollect
             logErr "#{lNbrErrors} orders were put in error during processing. Please check logs."
           end
           if (!lLstErrors.empty?)
-            logErr "#{lLstErrors.size} errors were reported:\n\n* ERROR: #{lLstErrors.join("\n\n")}"
+            logErr "#{lLstErrors.size} errors were reported. Check log for exact errors."
           end
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
           File.unlink(lLockFile)
@@ -342,7 +342,7 @@ module StatsCollect
         lPlugin, lError = getPluginInstance('Locations', iPluginName)
         if (lError == nil)
           # Ask the plugin to perform the order
-          lStatsProxy = StatsProxy.new(iObjectsList, iCategoriesList)
+          lStatsProxy = StatsProxy.new(iObjectsList, iCategoriesList, @BackendInstance, iPluginName)
           logInfo "===== Call Location plugin #{iPluginName} to perform order..."
           begin
             lPlugin.execute(lStatsProxy, lPluginConf, iObjectsList, iCategoriesList)
@@ -353,7 +353,7 @@ module StatsCollect
           end
           if (lError == nil)
             # Write the stats into the database
-            writeStats(lStatsProxy.StatsToAdd, iPluginName, iObjectsList, iCategoriesList)
+            writeStats(lStatsProxy.StatsToAdd, iObjectsList, iCategoriesList)
             # If the plugin failed on recoverable errors, note them
             lStatsProxy.RecoverableOrders.each do |iOrderInfo|
               iLstObjects, iLstCategories = iOrderInfo
@@ -434,10 +434,9 @@ module StatsCollect
     #
     # Parameters:
     # * *iStatsToAdd* (<em>list<[TimeStamp,Object,Category,Value]></em>): The stats to write in the DB
-    # * *iLocation* (_String_): The location of these stats
     # * *iLstObjects* (<em>list<String></em>): The filtering objects to write (can be empty for all)
     # * *iLstCategories* (<em>list<String></em>): The filtering categories to write (can be empty for all)
-    def writeStats(iStatsToAdd, iLocation, iLstObjects, iLstCategories)
+    def writeStats(iStatsToAdd, iLstObjects, iLstCategories)
       # Filter the stats we will really add
       lStatsToBeCommitted = nil
       if ((iLstObjects.empty?) and
@@ -468,13 +467,6 @@ module StatsCollect
       else
         # Get the current locations from the DB to know if our location exists
         lKnownLocations = @BackendInstance.getKnownLocations
-        lLocationID = lKnownLocations[iLocation]
-        if (lLocationID == nil)
-          # First create the new location and get its ID
-          logInfo "Creating new location: #{iLocation}"
-          lLocationID = @BackendInstance.addLocation(iLocation)
-        end
-        logDebug "Location used for those stats: #{iLocation} (#{lLocationID})"
         # Get the list of categories, sorted by category name
         lKnownCategories = @BackendInstance.getKnownCategories
         # Get the list of objects, sorted by object name
@@ -482,7 +474,16 @@ module StatsCollect
         lKnownObjects = @BackendInstance.getKnownObjects
         # Add statistics
         lStatsToBeCommitted.each do |iStatsInfo|
-          iTimeStamp, iObject, iCategory, iValue = iStatsInfo
+          iTimeStamp, iLocation, iObject, iCategory, iValue = iStatsInfo
+          lLocationID = nil
+          if (lKnownLocations[iLocation] == nil)
+            # First create the new location and get its ID
+            logInfo "Creating new location: #{iLocation}"
+            lLocationID = @BackendInstance.addLocation(iLocation)
+            lKnownLocations[iLocation] = lLocationID
+          else
+            lLocationID = lKnownLocations[iLocation]
+          end
           # Check that the category exists
           lValueType = nil
           lCategoryID = nil
