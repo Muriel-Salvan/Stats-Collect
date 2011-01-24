@@ -100,6 +100,23 @@
       :Objects => [
         'GoogleGroupName'
       ]
+    },
+    'CSV' => {
+      :ColumnSeparator => ',',
+      :RowSeparator => "\n",
+      :QuoteChar => '"',
+      :DateTimeFormat => '%d/%m/%y %H:%M',
+      :IDsMustExist => false,
+      :Files => [
+        'C:\\Temp\\Stats.csv'
+      ]
+    },
+    'RB' => {
+      :DateTimeFormat => '%Y-%m-%d %H:%M:%S',
+      :IDsMustExist => false,
+      :Files => [
+        'C:\\Temp\\Stats.rb'
+      ]
     }
   }
 }

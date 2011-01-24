@@ -472,17 +472,27 @@ module StatsCollect
         # Get the list of objects, sorted by object name
         # This map will eventually be completed if new objects are found among the stats to write.
         lKnownObjects = @BackendInstance.getKnownObjects
+        # Use the following to generate a RB file that can be used with RB plugin.
+        if false
+          lStrStats = []
+          lStatsToBeCommitted.each do |iStatsInfo|
+            lCheckExistence, iTimeStamp, iLocation, iObject, iCategory, iValue = iStatsInfo
+            lStrStats << [ lCheckExistence, iTimeStamp.strftime('%Y-%m-%d %H:%M:%S'), iLocation, iObject, iCategory, iValue ].inspect
+          end
+          File.open('__StatsToBeWritten.rb', 'w') do |oFile|
+            oFile.write("[\n#{lStrStats.join(",\n")}\n]")
+          end
+        end
         # Add statistics
         lStatsToBeCommitted.each do |iStatsInfo|
-          iTimeStamp, iLocation, iObject, iCategory, iValue = iStatsInfo
-          lLocationID = nil
-          if (lKnownLocations[iLocation] == nil)
+          lCheckExistence, iTimeStamp, iLocation, iObject, iCategory, iValue = iStatsInfo
+          lLocationID = lKnownLocations[iLocation]
+          if (lLocationID == nil)
             # First create the new location and get its ID
             logInfo "Creating new location: #{iLocation}"
             lLocationID = @BackendInstance.addLocation(iLocation)
             lKnownLocations[iLocation] = lLocationID
-          else
-            lLocationID = lKnownLocations[iLocation]
+            lCheckExistence = false
           end
           # Check that the category exists
           lValueType = nil
@@ -492,6 +502,7 @@ module StatsCollect
             lValueType = STATS_VALUE_TYPE_UNKNOWN
             lCategoryID = @BackendInstance.addCategory(iCategory, lValueType)
             lKnownCategories[iCategory] = [ lCategoryID, lValueType ]
+            lCheckExistence = false
           else
             lCategoryID, lValueType = lKnownCategories[iCategory]
           end
@@ -501,10 +512,22 @@ module StatsCollect
             logInfo "Creating new object: #{iObject}"
             lObjectID = @BackendInstance.addObject(iObject)
             lKnownObjects[iObject] = lObjectID
+            lCheckExistence = false
           end
-          # Add the stat
-          @BackendInstance.addStat(iTimeStamp, lLocationID, lObjectID, lCategoryID, iValue, lValueType)
-          logDebug "Added stat: Time: #{iTimeStamp}, Location: #{iLocation} (#{lLocationID}), Object: #{iObject} (#{lObjectID}), Category: #{iCategory} (#{lCategoryID}), Value: #{iValue}"
+          # First, we ensure that this stats does not exist if we don't want duplicates
+          lAdd = true
+          if (lCheckExistence)
+            lExistingValue = @BackendInstance.getStat(iTimeStamp, lLocationID, lObjectID, lCategoryID, lValueType)
+            if (lExistingValue != nil)
+              logWarn "Stat value for #{iTimeStamp.strftime('%Y-%m-%d %H:%M:%S')}, Location: #{lLocationID}, Object: #{lObjectID}, Category: #{lCategoryID} already exists with value #{lExistingValue}. Will not duplicate it."
+              lAdd = false
+            end
+          end
+          if (lAdd)
+            # Add the stat
+            @BackendInstance.addStat(iTimeStamp, lLocationID, lObjectID, lCategoryID, iValue, lValueType)
+            logDebug "Added stat: Time: #{iTimeStamp}, Location: #{iLocation} (#{lLocationID}), Object: #{iObject} (#{lObjectID}), Category: #{iCategory} (#{lCategoryID}), Value: #{iValue}"
+          end
         end
       end
     end

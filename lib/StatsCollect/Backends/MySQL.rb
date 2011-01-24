@@ -48,6 +48,7 @@ module StatsCollect
         @StatementInsertIntoStatsCategories = @MySQLConnection.prepare('INSERT INTO stats_categories (name, value_type) VALUES (?, ?)')
         @StatementInsertIntoStatsObjects = @MySQLConnection.prepare('INSERT INTO stats_objects (name) VALUES (?)')
         @StatementInsertIntoStatsValues = @MySQLConnection.prepare('INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
+        @StatementSelectFromStatsValues = @MySQLConnection.prepare('SELECT value FROM stats_values WHERE timestamp = ? AND stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
         @StatementInsertIntoStatsBinaryValues = @MySQLConnection.prepare('INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
         @StatementInsertIntoStatsOrders = @MySQLConnection.prepare('INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)')
         @StatementSelectFromStatsLastKeys = @MySQLConnection.prepare('SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
@@ -304,6 +305,48 @@ module StatsCollect
         end
       end
 
+      # Get an existing stat value
+      #
+      # Parameters:
+      # * *iTimeStamp* (_DateTime_): The timestamp
+      # * *iLocationID* (_Integer_): The location ID
+      # * *iObjectID* (_Integer_): The object ID
+      # * *iCategoryID* (_Integer_): The category ID
+      # * *iValueType* (_Integer_): The value type
+      # Return:
+      # * _Object_: The corresponding value, or nil if none
+      def getStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValueType)
+        rValue = nil
+
+        @StatementSelectFromStatsValues.execute(iTimeStamp.to_MySQLTime, iLocationID, iObjectID, iCategoryID)
+        if (@StatementSelectFromStatsValues.num_rows > 0)
+          @StatementSelectFromStatsValues.each do |iRow|
+            lStrValue = iRow[0]
+            case iValueType
+            when STATS_VALUE_TYPE_INTEGER
+              rValue = Integer(lStrValue)
+            when STATS_VALUE_TYPE_FLOAT
+              rValue = Float(lStrValue)
+            when STATS_VALUE_TYPE_PERCENTAGE
+              rValue = Float(lStrValue)
+            when STATS_VALUE_TYPE_UNKNOWN
+              rValue = lStrValue
+            when STATS_VALUE_TYPE_MAP
+              # TODO
+              rValue = lStrValue
+            when STATS_VALUE_TYPE_STRING
+              rValue = lStrValue
+            else
+              logErr "Unknown category value type: #{iValueType}. It will be treated as Unknown."
+              rValue = lStrValue
+            end
+            break
+          end
+        end
+
+        return rValue
+      end
+
       # Add a new stats order
       #
       # Parameters:
@@ -341,6 +384,7 @@ module StatsCollect
         @StatementInsertIntoStatsCategories.close
         @StatementInsertIntoStatsObjects.close
         @StatementInsertIntoStatsValues.close
+        @StatementSelectFromStatsValues.close
         @StatementInsertIntoStatsBinaryValues.close
         @StatementInsertIntoStatsOrders.close
         @StatementSelectFromStatsLastKeys.close

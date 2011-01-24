@@ -17,7 +17,7 @@ module StatsCollect
     attr_reader :UnrecoverableOrders
 
     # List of statistics to add
-    #   list< Time, Object, Category, Value >
+    #   list< CheckExistenceBeforeAdd?, Time, Location, Object, Category, Value >
     attr_reader :StatsToAdd
 
     # Constructor
@@ -83,12 +83,21 @@ module StatsCollect
       lTimestamp = (iOptions[:Timestamp] || DateTime.now)
       lLocation = (iOptions[:Location] || @Location)
       @StatsToAdd << [
+        (iOptions[:Timestamp] != nil),
         lTimestamp,
         lLocation,
         iObject,
         iCategory,
         iValue
       ]
+    end
+
+    # Add a stats list
+    #
+    # Parameters:
+    # * *iLstStats* (<em>list<[...]></em>): List of stats. See :StatsToAdd property for internal fields to set.
+    def addStatsList(iLstStats)
+      @StatsToAdd.concat(iLstStats)
     end
 
     # Add a new recoverable order

@@ -117,7 +117,23 @@ module StatsCollect
       # * *iValue* (_Object_): The value to store
       # * *iValueType* (_Integer_): The value type
       def addStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValue, iValueType)
-        logMsg "Added stat: #{iTimeStamp} | Location: #{iLocationID} | Object: #{iObjectID} | Category: #{iCategoryID} | Value: #{iValue}"
+        logMsg "Added stat: #{iTimeStamp} | Location: #{iLocationID} | Object: #{iObjectID} | Category: #{iCategoryID} (value type: #{iValueType}) | Value: #{iValue}"
+      end
+
+      # Get an existing stat value
+      #
+      # Parameters:
+      # * *iTimeStamp* (_DateTime_): The timestamp
+      # * *iLocationID* (_Integer_): The location ID
+      # * *iObjectID* (_Integer_): The object ID
+      # * *iCategoryID* (_Integer_): The category ID
+      # * *iValueType* (_Integer_): The value type
+      # Return:
+      # * _Object_: The corresponding value, or nil if none
+      def getStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValueType)
+        logMsg "Get stat: #{iTimeStamp} | Location: #{iLocationID} | Object: #{iObjectID} | Category: #{iCategoryID} (value type: #{iValueType})"
+
+        return nil
       end
 
       # Add a new stats order
