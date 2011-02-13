@@ -237,12 +237,12 @@ module StatsCollect
                   lExistingValue.merge!(Marshal.load(iRowValue[1..-1]))
                 when DIFFDATA_DELETE
                   lValuesToDelete = Marshal.load(iRowValue[1..-1])
-                  lExistingValue.delete_if do |iKey, iValue|
+                  lExistingValue.delete_if do |iKey, iExistingValue|
                     next (lValuesToDelete.include?(iKey))
                   end
                 when DIFFDATA_MODIFY
                   lValuesToDelete, lValuesToModify = Marshal.load(iRowValue[1..-1])
-                  lExistingValue.delete_if do |iKey, iValue|
+                  lExistingValue.delete_if do |iKey, iExistingValue|
                     next (lValuesToDelete.include?(iKey))
                   end
                   lExistingValue.merge!(lValuesToModify)
