@@ -529,6 +529,7 @@ module StatsCollect
             logDebug "Added stat: Time: #{iTimeStamp}, Location: #{iLocation} (#{lLocationID}), Object: #{iObject} (#{lObjectID}), Category: #{iCategory} (#{lCategoryID}), Value: #{iValue}"
           end
         end
+        logInfo "#{lStatsToBeCommitted.size} stats added."
       end
     end
 
