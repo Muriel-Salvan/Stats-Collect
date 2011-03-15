@@ -45,7 +45,7 @@ module StatsCollect
         lProfilePage = iMechanizeAgent.get("http://www.facebook.com/pages/#{iConf[:PageID]}")
         lNbrLikes = nil
         lProfilePage.root.css('script').each do |iScriptNode|
-          lMatch = iScriptNode.content.match(/>(\d*) People Like This/)
+          lMatch = iScriptNode.content.match(/>\\u003cspan class=\\"uiNumberGiant fsxxl fwb\\">(\d*)\\u003c\\\/span>/)
           if (lMatch != nil)
             lNbrLikes = Integer(lMatch[1])
             break
