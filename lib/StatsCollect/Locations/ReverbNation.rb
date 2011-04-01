@@ -94,9 +94,9 @@ module StatsCollect
           lChildrenNodes = iStatsSectionNode.children
           lChildrenNodes.each_with_index do |iNode, iIdx|
             if (iNode.content == 'Genre:')
-              lChartPositionGenre = Integer(lChildrenNodes[iIdx+1].content.strip)
+              lChartPositionGenre = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(',',''))
             elsif (iNode.content == 'Global:')
-              lChartPositionGlobal = Integer(lChildrenNodes[iIdx+1].content.strip)
+              lChartPositionGlobal = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(',',''))
             end
           end
           if ((lChartPositionGenre != nil) and
@@ -113,9 +113,9 @@ module StatsCollect
             lChildrenNodes = iPaneNode.children
             lChildrenNodes.each_with_index do |iNode, iIdx|
               if (iNode.content == 'Band Equity Score: ')
-                lBandEquityScore = Integer(lChildrenNodes[iIdx+1].content.strip)
+                lBandEquityScore = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(',',''))
               elsif (iNode.content == 'Total Fans: ')
-                lNbrFriends = Integer(lChildrenNodes[iIdx+1].content.strip)
+                lNbrFriends = Integer(lChildrenNodes[iIdx+1].content.strip.gsub(',',''))
               end
             end
             if ((lBandEquityScore != nil) and
