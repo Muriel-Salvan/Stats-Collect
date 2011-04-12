@@ -31,11 +31,13 @@ module StatsCollect
         lUserID = lHomePage.uri.to_s.match(/^http:\/\/www\.reverbnation\.com\/artist\/control_room\/(\d*)$/)[1]
         if ((oStatsProxy.isCategoryIncluded?('Song plays')) or
             (oStatsProxy.isCategoryIncluded?('Song downloads')) or
-            (oStatsProxy.isCategoryIncluded?('Video plays')) or
             (oStatsProxy.isCategoryIncluded?('Song play ratio')) or
             (oStatsProxy.isCategoryIncluded?('Song likes')) or
             (oStatsProxy.isCategoryIncluded?('Song dislikes')))
           getPlays(oStatsProxy, lMechanizeAgent, lUserID)
+        end
+        if (oStatsProxy.isCategoryIncluded?('Video plays'))
+          getVideos(oStatsProxy, lMechanizeAgent, lUserID)
         end
         if ((oStatsProxy.isObjectIncluded?('Global')) and
             ((oStatsProxy.isCategoryIncluded?('Chart position genre')) or
@@ -54,8 +56,8 @@ module StatsCollect
       # * *iUserID* (_String_): The ReverbNation user ID
       def getPlays(oStatsProxy, iMechanizeAgent, iUserID)
         # Get the Ajax stats table
-        lStatsTable = iMechanizeAgent.get("http://www.reverbnation.com/artist/new_stats_plays_table/#{iUserID}?all_time=true")
-        lStatsTableNode = Nokogiri::HTML(lStatsTable.content[31..-4].gsub(/\\"/,'"').gsub(/\\n/,"\n").gsub(/\\r/,''))
+        lStatsTable = iMechanizeAgent.get("http://www.reverbnation.com/artist/new_stats_song_plays_table/#{iUserID}?all_time=true")
+        lStatsTableNode = Nokogiri::HTML(lStatsTable.content[36..-4].gsub(/\\"/,'"').gsub(/\\n/,"\n").gsub(/\\r/,''))
         # Screen scrap it
         lLstSongsRead = []
         lStatsTableNode.css('table.statstable_full tr')[1..-3].each do |iSongNode|
@@ -63,20 +65,40 @@ module StatsCollect
           lSongTitle = lNodeContents[1].content
           lNbrSongPlays = Integer(lNodeContents[3].content)
           lNbrSongDownloads = Integer(lNodeContents[4].content)
-          lNbrVideoPlays = Integer(lNodeContents[5].content)
-          lPlayRatio = Integer(lNodeContents[6].content.match(/^(\d*)%$/)[1])
-          lMatch = lNodeContents[7].content.match(/^(\d*)\/(\d*)$/)
+          lPlayRatio = Integer(lNodeContents[5].content.match(/^(\d*)%$/)[1])
+          lMatch = lNodeContents[6].content.match(/^(\d*)\/(\d*)$/)
           lNbrLikes = Integer(lMatch[1])
           lNbrDislikes = Integer(lMatch[2])
           oStatsProxy.addStat(lSongTitle, 'Song plays', lNbrSongPlays)
           oStatsProxy.addStat(lSongTitle, 'Song downloads', lNbrSongDownloads)
-          oStatsProxy.addStat(lSongTitle, 'Video plays', lNbrVideoPlays)
           oStatsProxy.addStat(lSongTitle, 'Song play ratio', lPlayRatio)
           oStatsProxy.addStat(lSongTitle, 'Song likes', lNbrLikes)
           oStatsProxy.addStat(lSongTitle, 'Song dislikes', lNbrDislikes)
           lLstSongsRead << lSongTitle
         end
         logDebug "#{lLstSongsRead.size} songs read: #{lLstSongsRead.join(', ')}"
+      end
+
+      # Get the videos statistics
+      #
+      # Parameters:
+      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
+      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
+      # * *iUserID* (_String_): The ReverbNation user ID
+      def getVideos(oStatsProxy, iMechanizeAgent, iUserID)
+        # Get the Ajax stats table
+        lStatsTable = iMechanizeAgent.get("http://www.reverbnation.com/artist/new_stats_video_plays_table/#{iUserID}?all_time=true")
+        lStatsTableNode = Nokogiri::HTML(lStatsTable.content[37..-4].gsub(/\\"/,'"').gsub(/\\n/,"\n").gsub(/\\r/,''))
+        # Screen scrap it
+        lLstVideosRead = []
+        lStatsTableNode.css('table.statstable_full tr')[1..-3].each do |iSongNode|
+          lNodeContents = iSongNode.css('td')
+          lVideoTitle = lNodeContents[1].children[0].content
+          lNbrVideoPlays = Integer(lNodeContents[3].content)
+          oStatsProxy.addStat(lVideoTitle, 'Video plays', lNbrVideoPlays)
+          lLstVideosRead << lVideoTitle
+        end
+        logDebug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
       end
 
       # Get the report statistics
