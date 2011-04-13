@@ -157,40 +157,8 @@ module StatsCollect
     def collect
       rErrorCode = 0
 
-      # Prevent concurrent execution
-      require 'tmpdir'
-      lLockFile = "#{Dir.tmpdir}/StatsCollect.lock"
-      if (File.exists?(lLockFile))
-        logErr "Another instance of stats collection is already running. Delete file #{lLockFile} if it is not."
-        begin
-          lDetails = nil
-          File.open(lLockFile, 'r') do |iFile|
-            lDetails = eval(iFile.read)
-          end
-          logErr "Details of the running instance: #{lDetails.inspect}"
-          # If the process does not exist anymore, remove the lock file
-          # TODO: Adapt this to non Unix systems
-          if (!File.exists?("/proc/#{lDetails[:PID]}"))
-            logErr "Process #{lDetails[:PID]} does not exist anymore. Removing lock file."
-            File.unlink(lLockFile)
-            # Do not set lErrorCode, as we want the processing to continue
-          else
-            rErrorCode = 12
-          end
-        rescue Exception
-          logErr "Invalid lock file #{lLockFile}: #{$!}."
-          rErrorCode = 13
-        end
-      end
-      if (rErrorCode == 0)
-        File.open(lLockFile, 'w') do |oFile|
-          oFile << "
-            {
-              :ExecutionTime => '#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}',
-              :PID => '#{Process.pid}'
-            }
-          "
-        end
+      require 'rUtilAnts/Misc'
+      lMutexErrorCode = RUtilAnts::Misc::fileMutex('StatsCollect') do
         begin
           # The list of errors
           lLstErrors = []
@@ -245,18 +213,15 @@ module StatsCollect
             logErr "#{lLstErrors.size} errors were reported. Check log for exact errors."
           end
           logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
-          File.unlink(lLockFile)
         rescue Exception
           logErr "Exception thrown while collecting stats: #{$!}.\n#{$!.backtrace.join("\n")}"
           rErrorCode = 15
-          begin
-            File.unlink(lLockFile)
-          rescue Exception
-            logErr "Exception thrown while deleting lock file: #{$!}\n#{$!.backtrace.join("\n")}"
-            rErrorCode = 16
-          end
           @NotifyUser = true
         end
+      end
+      if ((lMutexErrorCode != RUtilAnts::Misc::FILEMUTEX_NO_LOCK) and
+          (lMutexErrorCode != RUtilAnts::Misc::FILEMUTEX_ZOMBIE_LOCK))
+        rErrorCode = 12
       end
 
       return rErrorCode
