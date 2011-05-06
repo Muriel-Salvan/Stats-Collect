@@ -66,7 +66,7 @@ module StatsCollect
         # Click on the Profile link from the home page
         lProfilePage = iMechanizeAgent.get('http://www.myspace.com/home').link_with(:text => 'Profile').click
         # Screen scrap it
-        lNbrComments = Integer(lProfilePage.root.css('div.commentsModule > div > div > div > div.moduleBody > div.genericComments > a.moreComments > span.cnt').first.content.match(/of (\d*)/)[1])
+        lNbrComments = Integer(lProfilePage.root.css('div.wrap div.container article div.content div.contentMid1 div.contentMid2 div.profileWrap div.layout div.moduleMid div.moduleMid1 div.moduleMid2 div.moduleBody div.commentContainer a.moreComments span.cnt').first.content.match(/of (\d*)/)[1])
         oStatsProxy.addStat('Global', 'Comments', lNbrComments)
       end
 

@@ -158,7 +158,8 @@ module StatsCollect
       rErrorCode = 0
 
       require 'rUtilAnts/Misc'
-      lMutexErrorCode = RUtilAnts::Misc::fileMutex('StatsCollect') do
+      RUtilAnts::Misc::initializeMisc
+      lMutexErrorCode = fileMutex('StatsCollect') do
         begin
           # The list of errors
           lLstErrors = []
