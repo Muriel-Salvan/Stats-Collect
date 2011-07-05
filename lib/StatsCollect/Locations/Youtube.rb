@@ -22,7 +22,7 @@ module StatsCollect
       def execute(oStatsProxy, iConf, iLstObjects, iLstCategories)
         require 'mechanize'
         lMechanizeAgent = Mechanize.new
-        lLoginForm = lMechanizeAgent.get('http://www.youtube.com').link_with(:text => 'Sign In').click.forms[1]
+        lLoginForm = lMechanizeAgent.get('http://www.youtube.com').link_with(:text => 'Sign In').click.forms[0]
         lLoginForm.Email = iConf[:LoginEMail]
         lLoginForm.Passwd = iConf[:LoginPassword]
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
@@ -84,7 +84,7 @@ module StatsCollect
         lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/account_overview')
         lNbrVisits = nil
         lNbrFollowers = nil
-        lOverviewPage.root.css('div.statBlock').each do |iStatsSectionNode|
+        lOverviewPage.root.css('div.statBlock div').each do |iStatsSectionNode|
           lChildrenNodes = iStatsSectionNode.children
           lChildrenNodes.each_with_index do |iNode, iIdx|
             if (iNode.content == 'Channel Views:')
@@ -99,9 +99,9 @@ module StatsCollect
           end
         end
         if (lNbrVisits == nil)
-          logErr "Unable to get number of visits: #{lOverviewPage}"
+          logErr "Unable to get number of visits: #{lOverviewPage.content}"
         elsif (lNbrFollowers == nil)
-          logErr "Unable to get number of followers: #{lOverviewPage}"
+          logErr "Unable to get number of followers: #{lOverviewPage.content}"
         else
           oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
           oStatsProxy.addStat('Global', 'Followers', lNbrFollowers)

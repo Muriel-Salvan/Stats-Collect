@@ -31,7 +31,7 @@ module StatsCollect
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first)
         if ((oStatsProxy.isObjectIncluded?('Global')) and
             (oStatsProxy.isCategoryIncluded?('Friends')))
-          getProfile(oStatsProxy, lMechanizeAgent)
+          getProfile(oStatsProxy, lMechanizeAgent, iConf)
         end
       end
 
@@ -40,11 +40,12 @@ module StatsCollect
       # Parameters:
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
-      def getProfile(oStatsProxy, iMechanizeAgent)
-        lProfilePage = iMechanizeAgent.get('http://www.facebook.com/profile.php')
+      # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
+      def getProfile(oStatsProxy, iMechanizeAgent, iConf)
+        lProfilePage = iMechanizeAgent.get("http://www.facebook.com/#{iConf[:URLID]}")
         lNbrFriends = nil
         lProfilePage.root.css('script').each do |iScriptNode|
-          lMatch = iScriptNode.content.match(/sk=friends&amp;v=friends\\">Friends \((\d*)\)\\u003c\\\/a>/)
+          lMatch = iScriptNode.content.match(/sk=friends&amp;v=friends\\">Friends \((\d*)\)/)
           #lMatch = iScriptNode.content.match(/>Friends \((\d*)\)/)
           # The following line is valid for old profiles only
           #lMatch = iScriptNode.content.match(/>(\d*) friends<\\\/a><\\\/span>/)
