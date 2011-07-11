@@ -40,21 +40,25 @@ module StatsCollect
       # Parameters:
       # * *iConf* (<em>map<Symbol,Object></em>): Configuration of this backend
       def initSession(iConf)
-        require 'mysql'
-        @MySQLConnection = Mysql.new(iConf[:DBHost], iConf[:DBUser], iConf[:DBPassword], iConf[:DBName])
-        @StatementSelectFromStatsOrders = @MySQLConnection.prepare('SELECT id, timestamp, locations_list, objects_list, categories_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC')
-        @StatementDeleteFromStatsOrders = @MySQLConnection.prepare('DELETE FROM stats_orders WHERE id=?')
-        @StatementInsertIntoStatsLocations = @MySQLConnection.prepare('INSERT INTO stats_locations (name) VALUES (?)')
-        @StatementInsertIntoStatsCategories = @MySQLConnection.prepare('INSERT INTO stats_categories (name, value_type) VALUES (?, ?)')
-        @StatementInsertIntoStatsObjects = @MySQLConnection.prepare('INSERT INTO stats_objects (name) VALUES (?)')
-        @StatementInsertIntoStatsValues = @MySQLConnection.prepare('INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
-        @StatementSelectFromStatsValues = @MySQLConnection.prepare('SELECT value FROM stats_values WHERE timestamp = ? AND stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
-        @StatementInsertIntoStatsBinaryValues = @MySQLConnection.prepare('INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)')
-        @StatementInsertIntoStatsOrders = @MySQLConnection.prepare('INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)')
-        @StatementSelectFromStatsLastKeys = @MySQLConnection.prepare('SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
-        @StatementSelectFromStatsBinaryValues = @MySQLConnection.prepare('SELECT id, value FROM stats_binary_values WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ? AND id >= ? ORDER BY id')
-        @StatementInsertIntoStatsLastKeys = @MySQLConnection.prepare('INSERT INTO stats_last_keys (stats_location_id, stats_object_id, stats_category_id, stats_value_id) VALUES (?, ?, ?, ?)')
-        @StatementUpdateStatsLastKeys = @MySQLConnection.prepare('UPDATE stats_last_keys SET stats_value_id = ? WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?')
+        require 'rUtilAnts/MySQLPool'
+        RUtilAnts::MySQLPool::initializeMySQLPool
+        lError, @MySQLConnection = connectToMySQL(iConf[:DBHost], iConf[:DBName], iConf[:DBUser], iConf[:DBPassword])
+        if (lError != nil)
+          raise lError
+        end
+        @StatementSelectFromStatsOrders = getPreparedStatement(@MySQLConnection, 'SELECT id, timestamp, locations_list, objects_list, categories_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC', :LeaveOpen => true)
+        @StatementDeleteFromStatsOrders = getPreparedStatement(@MySQLConnection, 'DELETE FROM stats_orders WHERE id=?', :LeaveOpen => true)
+        @StatementInsertIntoStatsLocations = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_locations (name) VALUES (?)', :LeaveOpen => true)
+        @StatementInsertIntoStatsCategories = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_categories (name, value_type) VALUES (?, ?)', :LeaveOpen => true)
+        @StatementInsertIntoStatsObjects = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_objects (name) VALUES (?)', :LeaveOpen => true)
+        @StatementInsertIntoStatsValues = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
+        @StatementSelectFromStatsValues = getPreparedStatement(@MySQLConnection, 'SELECT value FROM stats_values WHERE timestamp = ? AND stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
+        @StatementInsertIntoStatsBinaryValues = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
+        @StatementInsertIntoStatsOrders = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
+        @StatementSelectFromStatsLastKeys = getPreparedStatement(@MySQLConnection, 'SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
+        @StatementSelectFromStatsBinaryValues = getPreparedStatement(@MySQLConnection, 'SELECT id, value FROM stats_binary_values WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ? AND id >= ? ORDER BY id', :LeaveOpen => true)
+        @StatementInsertIntoStatsLastKeys = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_last_keys (stats_location_id, stats_object_id, stats_category_id, stats_value_id) VALUES (?, ?, ?, ?)', :LeaveOpen => true)
+        @StatementUpdateStatsLastKeys = getPreparedStatement(@MySQLConnection, 'UPDATE stats_last_keys SET stats_value_id = ? WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
       end
 
       # Get the next stats orders.
@@ -378,19 +382,20 @@ module StatsCollect
 
       # Close a session of this backend
       def closeSession
-        @StatementSelectFromStatsOrders.close
-        @StatementDeleteFromStatsOrders.close
-        @StatementInsertIntoStatsLocations.close
-        @StatementInsertIntoStatsCategories.close
-        @StatementInsertIntoStatsObjects.close
-        @StatementInsertIntoStatsValues.close
-        @StatementSelectFromStatsValues.close
-        @StatementInsertIntoStatsBinaryValues.close
-        @StatementInsertIntoStatsOrders.close
-        @StatementSelectFromStatsLastKeys.close
-        @StatementSelectFromStatsBinaryValues.close
-        @StatementInsertIntoStatsLastKeys.close
-        @StatementUpdateStatsLastKeys.close
+        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsOrders)
+        closePreparedStatement(@MySQLConnection, @StatementDeleteFromStatsOrders)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsLocations)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsCategories)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsObjects)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsValues)
+        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsValues)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsBinaryValues)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsOrders)
+        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsLastKeys)
+        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsBinaryValues)
+        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsLastKeys)
+        closePreparedStatement(@MySQLConnection, @StatementUpdateStatsLastKeys)
+        closeMySQL(@MySQLConnection)
       end
 
     end

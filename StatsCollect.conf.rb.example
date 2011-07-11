@@ -30,7 +30,16 @@
       # To who the notifications are sent
       :To => 'mail@host.com'
     },
-    'None' => {}
+    'None' => {},
+    'LogFile' => {
+      :FileName => '/log/MyLogFile.log',
+      :Append => true
+    },
+    'Custom' => {
+      :SendCode => Proc.new do |iMessage|
+        puts iMessage
+      end
+    }
   },
 
   # Configuration for Locations
