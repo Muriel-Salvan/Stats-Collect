@@ -29,7 +29,7 @@ module StatsCollect
         lLoginForm = lMechanizeAgent.get('http://groups.google.com/').link_with(:text => 'Sign in').click.forms[0]
         lLoginForm.Email = iConf[:LoginEMail]
         lLoginForm.Passwd = iConf[:LoginPassword]
-        lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
+        lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta_refresh.first.click
         iConf[:Objects].each do |iGroupName|
           if (oStatsProxy.isCategoryIncluded?('Friends'))
             getMembers(oStatsProxy, lMechanizeAgent, iGroupName)
