@@ -25,7 +25,11 @@ module StatsCollect
         lLoginForm = lMechanizeAgent.get('http://www.youtube.com').link_with(:text => 'Sign In').click.forms[0]
         lLoginForm.Email = iConf[:LoginEMail]
         lLoginForm.Passwd = iConf[:LoginPassword]
-        lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta_refresh.first.click
+        if (Mechanize::VERSION > '1.0.0')
+          lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta_refresh.first.click
+        else
+          lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
+        end
         if ((oStatsProxy.isCategoryIncluded?('Video plays')) or
             (oStatsProxy.isCategoryIncluded?('Video likes')) or
             (oStatsProxy.isCategoryIncluded?('Video dislikes')) or
