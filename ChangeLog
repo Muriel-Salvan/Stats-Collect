@@ -1,5 +1,96 @@
 = StatsCollect Release History
 
+== 0.2.0.20110830 (Beta)
+
+=== General
+
+* Migrated TODO list to Trackers.
+* Updated copyright information.
+* Migrated source repository to git.
+* Used fileMutex from last rUtilAnts version.
+* Added useful log info.
+* Completed the conf example file.
+* New API: Location plugins can now add a complete list of stats at once.
+* New API: Backends have to be able to return a given stat.
+* When stats are added with a given timestamp, their existence will be checked before add.
+* Added RB location plugin to add stats from a Ruby list defined in a file.
+* Collection plugins can now add stats for a given timestamp.
+* Collection plugins can now add stats for a location different than they.
+* Collection plugins can now ask for the list of known categories, locations and objects.
+* Removed the logging of errors details a second time at the end of logs.
+* Added CSV plugin to collect stats from CSV files.
+* Added a string type value
+* Added a way to recap all encountered errors at the end of the log.
+* Added PID info in logs.
+* Lock file is removed when the process it monitors has disappeared.
+* Added MAP stats value type.
+* Added new error logging: no more needed to parse the whole logs to check for errors presence.
+* Changed API for Backends: Implemented a simplified and more flexible way to specify Stats Orders.
+* Add a configurable delay when re-enqueuing recoverable stats orders.
+* Added a closeSession method to finalize Backend sessions.
+* Bug correction: StatsCollect did not execute due to new rUtilAnts lib.
+* Bug correction: Lock file was not deleted when exception occurred.
+
+=== Backends/MySQL
+
+* Uses MySQL connection and prepared statements pools
+* Implemented a way to store Ruby maps as values in a differential storage (encode differences only).
+* Process only stats orders with past times tamps
+* Adapted to the new API.
+* Now uses prepared queries for performance and security.
+* Bug correction: Stats orders were not read correctly from DB.
+
+=== Backends/Terminal
+
+* Adapted to the new API.
+* Bug correction: Enqueued order was invalid.
+
+=== Locations/Facebook
+
+* Updated to the new URL scheme. Configuration files need to add :URLID attribute.
+* Facebook changed pages code.
+* Changed the way number of friends were retrieved, as Facebook code changed
+* Changed UserAgent as Facebook considered it as mobile
+
+=== Locations/FacebookArtist
+
+* Facebook changed pages code.
+* Changed UserAgent as Facebook considered it as mobile
+
+=== Locations/GoogleGroup
+
+* Added compatibility between Mechanize 1.0.0 and 2.0.1.
+* Updated to Mechanize 2.0.1 API.
+* Added a new Location plugin to parse GoogleGroups.
+
+=== Locations/MySpace
+
+* Corrected MySpace code as it has changed.
+* Changed the way comments are parsed.
+* Added a stat to get complete Friends list with IDs and names.
+* Bug correction: Visits and Friends where not counted correctly when exceeding 1000.
+* Bug correction: Friends lists did not match names on IDs sometimes.
+
+=== Locations/ReverbNation
+
+* Changed way to parse songs and videos plays
+* Changed way to parse integers with thousand separators.
+
+=== Locations/Youtube
+
+* Added compatibility between Mechanize 1.0.0 and 2.0.1.
+* Updated to Mechanize 2.0.1 API.
+* Adapted to new code.
+* Bug correction: Counters were not parsed correctly when greater than 1000.
+
+=== Notifiers/Custom
+
+* Added a customizable notifier
+
+=== Notifiers/LogFile
+
+* Added a log file notifier
+
 == 0.1.1.20101220 (Beta)
 
 * Facebook: Adapted code to new profiles.

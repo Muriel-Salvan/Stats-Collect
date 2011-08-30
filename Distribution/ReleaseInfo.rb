@@ -16,7 +16,7 @@ RubyPackager::ReleaseInfo.new.
     :Description => 'StatsCollect is a little framework gathering statistics from external sources (social networks, web sites...), stored in pluggable backends. It can be very easily extended thanks to its plugins (currently include Facebook, Myspace, Youtube, Google).',
     :ImageURL => 'http://statscollect.sourceforge.net/wiki/images/c/c9/Logo.jpg',
     :FaviconURL => 'http://statscollect.sourceforge.net/wiki/images/2/26/Favicon.png',
-    :SVNBrowseURL => 'http://statscollect.svn.sourceforge.net/viewvc/statscollect/',
+    :SVNBrowseURL => 'http://statscollect.git.sourceforge.net/',
     :DevStatus => 'Beta'
   ).
   addCoreFiles( [
