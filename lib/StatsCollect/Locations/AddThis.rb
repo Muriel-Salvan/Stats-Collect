@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -23,13 +23,13 @@ module StatsCollect
         require 'mechanize'
         lMechanizeAgent = Mechanize.new
         # Get the number of shares
-        if (oStatsProxy.isCategoryIncluded?('Monthly shares'))
+        if (oStatsProxy.is_category_included?('Monthly shares'))
           getDomains(oStatsProxy, lMechanizeAgent, iConf, 'month', 'Monthly shares')
         end
-        if (oStatsProxy.isCategoryIncluded?('Weekly shares'))
+        if (oStatsProxy.is_category_included?('Weekly shares'))
           getDomains(oStatsProxy, lMechanizeAgent, iConf, 'week', 'Weekly shares')
         end
-        if (oStatsProxy.isCategoryIncluded?('Daily shares'))
+        if (oStatsProxy.is_category_included?('Daily shares'))
           getDomains(oStatsProxy, lMechanizeAgent, iConf, 'day', 'Daily shares')
         end
       end
@@ -38,7 +38,7 @@ module StatsCollect
 
       # Get domains stats for a given period
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The mechanize agent
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
@@ -54,7 +54,7 @@ module StatsCollect
               lNbrShares = iDataInfo['shares']
             end
           end
-          oStatsProxy.addStat(iObject, iCategory, lNbrShares)
+          oStatsProxy.add_stat(iObject, iCategory, lNbrShares)
         end
       end
 

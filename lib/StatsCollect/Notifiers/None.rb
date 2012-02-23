@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -11,10 +11,10 @@ module StatsCollect
 
       # Send a given notification
       #
-      # Parameters:
+      # Parameters::
       # * *iConf* (<em>map<Symbol,Object></em>): The notifier config
       # * *iMessage* (_String_): Message to send
-      def sendNotification(iConf, iMessage)
+      def send_notification(iConf, iMessage)
       end
 
     end

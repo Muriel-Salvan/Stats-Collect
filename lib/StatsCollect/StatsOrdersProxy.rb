@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -20,14 +20,14 @@ module StatsCollect
 
     # Add a new stats order
     #
-    # Parameters:
+    # Parameters::
     # * *iID* (_Integer_): An ID identifying uniquely this stats order. It will be used to tell which stats orders have to be dequeued later.
     # * *iTimeStamp* (_DateTime_): Time stamp
     # * *iLstLocations* (<em>list<String></em>): List of locations
     # * *iLstObjects* (<em>list<String></em>): List of objects
     # * *iLstCategories* (<em>list<String></em>): List of categories
     # * *iStatus* (_Integer_): Status
-    def addStatsOrder(iID, iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus)
+    def add_stats_order(iID, iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus)
       lLstSortedLocations = iLstLocations.sort.uniq
       lLstSortedObjects = iLstObjects.sort.uniq
       lLstSortedCategories = iLstCategories.sort.uniq

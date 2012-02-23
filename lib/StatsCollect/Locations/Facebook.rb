@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -29,15 +29,15 @@ module StatsCollect
         lLoginForm.pass = iConf[:LoginPassword]
         # Submit to get to the home page
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first)
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            (oStatsProxy.isCategoryIncluded?('Friends')))
+        if ((oStatsProxy.is_object_included?('Global')) and
+            (oStatsProxy.is_category_included?('Friends')))
           getProfile(oStatsProxy, lMechanizeAgent, iConf)
         end
       end
 
       # Get the profile statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
@@ -55,9 +55,9 @@ module StatsCollect
           end
         end
         if (lNbrFriends == nil)
-          logErr "Unable to get number of friends: #{lProfilePage.root}"
+          log_err "Unable to get number of friends: #{lProfilePage.root}"
         else
-          oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+          oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
         end
       end
 

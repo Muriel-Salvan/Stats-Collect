@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -37,39 +37,39 @@ module StatsCollect
 
       # Initialize a session of this backend
       #
-      # Parameters:
+      # Parameters::
       # * *iConf* (<em>map<Symbol,Object></em>): Configuration of this backend
-      def initSession(iConf)
+      def init_session(iConf)
         require 'rUtilAnts/MySQLPool'
-        RUtilAnts::MySQLPool::initializeMySQLPool
-        lError, @MySQLConnection = connectToMySQL(iConf[:DBHost], iConf[:DBName], iConf[:DBUser], iConf[:DBPassword])
+        RUtilAnts::MySQLPool::install_mysql_pool_on_object
+        lError, @MySQLConnection = connect_to_mysql(iConf[:DBHost], iConf[:DBName], iConf[:DBUser], iConf[:DBPassword])
         if (lError != nil)
           raise lError
         end
-        @StatementSelectFromStatsOrders = getPreparedStatement(@MySQLConnection, 'SELECT id, timestamp, locations_list, objects_list, categories_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC', :LeaveOpen => true)
-        @StatementDeleteFromStatsOrders = getPreparedStatement(@MySQLConnection, 'DELETE FROM stats_orders WHERE id=?', :LeaveOpen => true)
-        @StatementInsertIntoStatsLocations = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_locations (name) VALUES (?)', :LeaveOpen => true)
-        @StatementInsertIntoStatsCategories = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_categories (name, value_type) VALUES (?, ?)', :LeaveOpen => true)
-        @StatementInsertIntoStatsObjects = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_objects (name) VALUES (?)', :LeaveOpen => true)
-        @StatementInsertIntoStatsValues = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
-        @StatementSelectFromStatsValues = getPreparedStatement(@MySQLConnection, 'SELECT value FROM stats_values WHERE timestamp = ? AND stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
-        @StatementInsertIntoStatsBinaryValues = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
-        @StatementInsertIntoStatsOrders = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)', :LeaveOpen => true)
-        @StatementSelectFromStatsLastKeys = getPreparedStatement(@MySQLConnection, 'SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
-        @StatementSelectFromStatsBinaryValues = getPreparedStatement(@MySQLConnection, 'SELECT id, value FROM stats_binary_values WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ? AND id >= ? ORDER BY id', :LeaveOpen => true)
-        @StatementInsertIntoStatsLastKeys = getPreparedStatement(@MySQLConnection, 'INSERT INTO stats_last_keys (stats_location_id, stats_object_id, stats_category_id, stats_value_id) VALUES (?, ?, ?, ?)', :LeaveOpen => true)
-        @StatementUpdateStatsLastKeys = getPreparedStatement(@MySQLConnection, 'UPDATE stats_last_keys SET stats_value_id = ? WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :LeaveOpen => true)
+        @StatementSelectFromStatsOrders = get_prepared_statement(@MySQLConnection, 'SELECT id, timestamp, locations_list, objects_list, categories_list, status FROM stats_orders WHERE (status = 0 OR status = 1) AND timestamp < ? ORDER BY timestamp DESC', :leave_open => true)
+        @StatementDeleteFromStatsOrders = get_prepared_statement(@MySQLConnection, 'DELETE FROM stats_orders WHERE id=?', :leave_open => true)
+        @StatementInsertIntoStatsLocations = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_locations (name) VALUES (?)', :leave_open => true)
+        @StatementInsertIntoStatsCategories = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_categories (name, value_type) VALUES (?, ?)', :leave_open => true)
+        @StatementInsertIntoStatsObjects = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_objects (name) VALUES (?)', :leave_open => true)
+        @StatementInsertIntoStatsValues = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :leave_open => true)
+        @StatementSelectFromStatsValues = get_prepared_statement(@MySQLConnection, 'SELECT value FROM stats_values WHERE timestamp = ? AND stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :leave_open => true)
+        @StatementInsertIntoStatsBinaryValues = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_binary_values (timestamp, stats_location_id, stats_object_id, stats_category_id, value) VALUES (?, ?, ?, ?, ?)', :leave_open => true)
+        @StatementInsertIntoStatsOrders = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_orders (timestamp, locations_list, objects_list, categories_list, status) VALUES (?, ?, ?, ?, ?)', :leave_open => true)
+        @StatementSelectFromStatsLastKeys = get_prepared_statement(@MySQLConnection, 'SELECT stats_value_id FROM stats_last_keys WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :leave_open => true)
+        @StatementSelectFromStatsBinaryValues = get_prepared_statement(@MySQLConnection, 'SELECT id, value FROM stats_binary_values WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ? AND id >= ? ORDER BY id', :leave_open => true)
+        @StatementInsertIntoStatsLastKeys = get_prepared_statement(@MySQLConnection, 'INSERT INTO stats_last_keys (stats_location_id, stats_object_id, stats_category_id, stats_value_id) VALUES (?, ?, ?, ?)', :leave_open => true)
+        @StatementUpdateStatsLastKeys = get_prepared_statement(@MySQLConnection, 'UPDATE stats_last_keys SET stats_value_id = ? WHERE stats_location_id = ? AND stats_object_id = ? AND stats_category_id = ?', :leave_open => true)
       end
 
       # Get the next stats orders.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsOrdersProxy* (_StatsOrdersProxy_): The stats orders proxy to be used to give stats orders
-      def getStatsOrders(oStatsOrdersProxy)
+      def get_stats_orders(oStatsOrdersProxy)
         @StatementSelectFromStatsOrders.execute(DateTime.now.to_MySQLTime)
         @StatementSelectFromStatsOrders.each do |iRow|
           iID, iMySQLTimeStamp, iStrLocations, iStrObjects, iStrCategories, iStatus = iRow
-          oStatsOrdersProxy.addStatsOrder(
+          oStatsOrdersProxy.add_stats_order(
             iID,
             DateTime.civil(
               iMySQLTimeStamp.year,
@@ -88,9 +88,9 @@ module StatsCollect
       # Dequeue the given stat orders IDs.
       # Code to begin a new transaction can be set in this method too. In this case, the dequeue should be part of the transaction, or it will have to be re-enqueued during rollback method call (otherwise orders will be lost).
       #
-      # Parameters:
+      # Parameters::
       # * *iLstStatsOrderIDs* (<em>list<Integer></em>): The list of stats order IDs to dequeue
-      def dequeueStatsOrders(iLstStatsOrderIDs)
+      def dequeue_stats_orders(iLstStatsOrderIDs)
         @MySQLConnection.query('start transaction')
         iLstStatsOrderIDs.each do |iStatsOrderID|
           @StatementDeleteFromStatsOrders.execute(iStatsOrderID)
@@ -99,9 +99,9 @@ module StatsCollect
 
       # Get the list of known locations
       #
-      # Return:
+      # Return::
       # * <em>map<String,Integer></em>: Each location with its associated ID
-      def getKnownLocations
+      def get_known_locations
         rKnownLocations = {}
 
         @MySQLConnection.query('SELECT name, id FROM stats_locations').each do |iRow|
@@ -114,9 +114,9 @@ module StatsCollect
 
       # Get the list of known categories
       #
-      # Return:
+      # Return::
       # * <em>map<String,[Integer,Integer]></em>: Each category with its associated ID and value type
-      def getKnownCategories
+      def get_known_categories
         rKnownCategories = {}
 
         @MySQLConnection.query('SELECT name, id, value_type FROM stats_categories').each do |iRow|
@@ -129,9 +129,9 @@ module StatsCollect
 
       # Get the list of known objects
       #
-      # Return:
+      # Return::
       # * <em>map<String,Integer></em>: Each object with its associated ID
-      def getKnownObjects
+      def get_known_objects
         rKnownObjects = {}
 
         @MySQLConnection.query('SELECT name, id FROM stats_objects').each do |iRow|
@@ -144,11 +144,11 @@ module StatsCollect
 
       # Add a new location
       #
-      # Parameters:
+      # Parameters::
       # * *iLocation* (_String_): The location
-      # Return:
+      # Return::
       # * _Integer_: Its resulting ID
-      def addLocation(iLocation)
+      def add_location(iLocation)
         @StatementInsertIntoStatsLocations.execute(iLocation)
 
         return @StatementInsertIntoStatsLocations.insert_id
@@ -156,12 +156,12 @@ module StatsCollect
 
       # Add a new category
       #
-      # Parameters:
+      # Parameters::
       # * *iCategory* (_String_): The category
       # * *iValueType* (_Integer_): Its value type
-      # Return:
+      # Return::
       # * _Integer_: Its resulting ID
-      def addCategory(iCategory, iValueType)
+      def add_category(iCategory, iValueType)
         @StatementInsertIntoStatsCategories.execute(iCategory, iValueType)
 
         return @StatementInsertIntoStatsCategories.insert_id
@@ -169,11 +169,11 @@ module StatsCollect
 
       # Add a new object
       #
-      # Parameters:
+      # Parameters::
       # * *iObject* (_String_): The object
-      # Return:
+      # Return::
       # * _Integer_: Its resulting ID
-      def addObject(iObject)
+      def add_object(iObject)
         @StatementInsertIntoStatsObjects.execute(iObject)
 
         return @StatementInsertIntoStatsObjects.insert_id
@@ -181,14 +181,14 @@ module StatsCollect
 
       # Add a new stat
       #
-      # Parameters:
+      # Parameters::
       # * *iTimeStamp* (_DateTime_): The time stamp
       # * *iLocationID* (_Integer_): Location ID
       # * *iObjectID* (_Integer_): Object ID
       # * *iCategoryID* (_Integer_): Category ID
       # * *iValue* (_Object_): The value to store
       # * *iValueType* (_Integer_): The value type
-      def addStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValue, iValueType)
+      def add_stat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValue, iValueType)
         # Do we need to store this value ID in the last keys ?
         lStoreInLastKeys = false
         lExistingLastKey = false
@@ -253,7 +253,7 @@ module StatsCollect
                 when DIFFDATA_SAME
                   # Nothing to do
                 else
-                  logErr "Unknown diff value type: #{iRowValue[0..0]}"
+                  log_err "Unknown diff value type: #{iRowValue[0..0]}"
                   raise RuntimeError.new("Unknown diff value type: #{iRowValue[0..0]}")
                 end
               end
@@ -293,7 +293,7 @@ module StatsCollect
         when STATS_VALUE_TYPE_STRING
           lStrValue = iValue
         else
-          logErr "Unknown category value type: #{iValueType}. It will be treated as Unknown."
+          log_err "Unknown category value type: #{iValueType}. It will be treated as Unknown."
           lStrValue = iValue.to_s
         end
         # Add the new stat in the DB for real
@@ -311,15 +311,15 @@ module StatsCollect
 
       # Get an existing stat value
       #
-      # Parameters:
+      # Parameters::
       # * *iTimeStamp* (_DateTime_): The timestamp
       # * *iLocationID* (_Integer_): The location ID
       # * *iObjectID* (_Integer_): The object ID
       # * *iCategoryID* (_Integer_): The category ID
       # * *iValueType* (_Integer_): The value type
-      # Return:
+      # Return::
       # * _Object_: The corresponding value, or nil if none
-      def getStat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValueType)
+      def get_stat(iTimeStamp, iLocationID, iObjectID, iCategoryID, iValueType)
         rValue = nil
 
         @StatementSelectFromStatsValues.execute(iTimeStamp.to_MySQLTime, iLocationID, iObjectID, iCategoryID)
@@ -341,7 +341,7 @@ module StatsCollect
             when STATS_VALUE_TYPE_STRING
               rValue = lStrValue
             else
-              logErr "Unknown category value type: #{iValueType}. It will be treated as Unknown."
+              log_err "Unknown category value type: #{iValueType}. It will be treated as Unknown."
               rValue = lStrValue
             end
             break
@@ -353,13 +353,13 @@ module StatsCollect
 
       # Add a new stats order
       #
-      # Parameters:
+      # Parameters::
       # * *iTimeStamp* (_DateTime_): The time stamp
       # * *iLstLocations* (<em>list<String></em>): List of locations
       # * *iLstObjects* (<em>list<String></em>): List of objects
       # * *iLstCategories* (<em>list<String></em>): List of categories
       # * *iStatus* (_Integer_): The order status
-      def putNewStatsOrder(iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus)
+      def put_new_stats_order(iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus)
         lMySQLTime = Mysql::Time.new(
           iTimeStamp.year,
           iTimeStamp.month,
@@ -381,21 +381,21 @@ module StatsCollect
       end
 
       # Close a session of this backend
-      def closeSession
-        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsOrders)
-        closePreparedStatement(@MySQLConnection, @StatementDeleteFromStatsOrders)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsLocations)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsCategories)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsObjects)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsValues)
-        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsValues)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsBinaryValues)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsOrders)
-        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsLastKeys)
-        closePreparedStatement(@MySQLConnection, @StatementSelectFromStatsBinaryValues)
-        closePreparedStatement(@MySQLConnection, @StatementInsertIntoStatsLastKeys)
-        closePreparedStatement(@MySQLConnection, @StatementUpdateStatsLastKeys)
-        closeMySQL(@MySQLConnection)
+      def close_session
+        close_prepared_statement(@MySQLConnection, @StatementSelectFromStatsOrders)
+        close_prepared_statement(@MySQLConnection, @StatementDeleteFromStatsOrders)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsLocations)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsCategories)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsObjects)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsValues)
+        close_prepared_statement(@MySQLConnection, @StatementSelectFromStatsValues)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsBinaryValues)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsOrders)
+        close_prepared_statement(@MySQLConnection, @StatementSelectFromStatsLastKeys)
+        close_prepared_statement(@MySQLConnection, @StatementSelectFromStatsBinaryValues)
+        close_prepared_statement(@MySQLConnection, @StatementInsertIntoStatsLastKeys)
+        close_prepared_statement(@MySQLConnection, @StatementUpdateStatsLastKeys)
+        close_mysql(@MySQLConnection)
       end
 
     end

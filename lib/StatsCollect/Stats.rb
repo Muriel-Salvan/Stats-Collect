@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -28,10 +28,10 @@ module StatsCollect
     def initialize
       # Parse for available Locations
       require 'rUtilAnts/Plugins'
-      RUtilAnts::Plugins::initializePlugins
-      parsePluginsFromDir('Locations', "#{File.expand_path(File.dirname(__FILE__))}/Locations", 'StatsCollect::Locations')
-      parsePluginsFromDir('Backends', "#{File.expand_path(File.dirname(__FILE__))}/Backends", 'StatsCollect::Backends')
-      parsePluginsFromDir('Notifiers', "#{File.expand_path(File.dirname(__FILE__))}/Notifiers", 'StatsCollect::Notifiers')
+      RUtilAnts::Plugins::install_plugins_on_object
+      parse_plugins_from_dir('Locations', "#{File.expand_path(File.dirname(__FILE__))}/Locations", 'StatsCollect::Locations')
+      parse_plugins_from_dir('Backends', "#{File.expand_path(File.dirname(__FILE__))}/Backends", 'StatsCollect::Backends')
+      parse_plugins_from_dir('Notifiers', "#{File.expand_path(File.dirname(__FILE__))}/Notifiers", 'StatsCollect::Notifiers')
 
       @Backend = nil
       @BackendInit = false
@@ -43,12 +43,12 @@ module StatsCollect
       @Options = OptionParser.new
       @Options.banner = 'StatsCollect.rb [--help] [--debug] --backend <Backend> --notifier <Notifier> --config <ConfigFile>'
       @Options.on( '--backend <Backend>', String,
-        "<Backend>: Backend to be used. Available backends are: #{getPluginNames('Backends').join(', ')}",
+        "<Backend>: Backend to be used. Available backends are: #{get_plugins_names('Backends').join(', ')}",
         'Specify the backend to be used') do |iArg|
         @Backend = iArg
       end
       @Options.on( '--notifier <Notifier>', String,
-        "<Notifier>: Notifier used to send notifications. Available notifiers are: #{getPluginNames('Notifiers').join(', ')}",
+        "<Notifier>: Notifier used to send notifications. Available notifiers are: #{get_plugins_names('Notifiers').join(', ')}",
         'Specify the notifier to be used') do |iArg|
         @Notifier = iArg
       end
@@ -63,7 +63,7 @@ module StatsCollect
       end
       @Options.on( '--debug',
         'Activate debug logs') do
-        activateLogDebug(true)
+        activate_log_debug(true)
       end
 
     end
@@ -71,9 +71,9 @@ module StatsCollect
     # Check that the environment is correctly set.
     # This has to be called prior to calling collect, and exit should be made if error code is not 0.
     #
-    # Parameters:
+    # Parameters::
     # * *iParams* (<em>list<String></em>): The parameters, as given in the command line
-    # Return:
+    # Return::
     # * _Integer_: Error code (given to exit) (0 = no error)
     def setup(iParams)
       rErrorCode = 0
@@ -82,29 +82,29 @@ module StatsCollect
       begin
         lRemainingArgs = @Options.parse(iParams)
         if (!lRemainingArgs.empty?)
-          logErr "Unknown arguments: #{lRemainingArgs.join(' ')}"
-          logErr @Options
+          log_err "Unknown arguments: #{lRemainingArgs.join(' ')}"
+          log_err @Options
           rErrorCode = 1
         end
       rescue Exception
-        logErr "Exception: #{$!}.\n#{$!.backtrace.join("\n")}"
+        log_err "Exception: #{$!}.\n#{$!.backtrace.join("\n")}"
         rErrorCode = 2
       end
       if (rErrorCode == 0)
         if (@DisplayHelp)
-          logMsg @Options
+          log_msg @Options
           rErrorCode = 3
         elsif (@Backend == nil)
-          logErr 'You must specify a backend.'
-          logErr @Options
+          log_err 'You must specify a backend.'
+          log_err @Options
           rErrorCode = 4
         elsif (@Notifier == nil)
-          logErr 'You must specify a notifier.'
-          logErr @Options
+          log_err 'You must specify a notifier.'
+          log_err @Options
           rErrorCode = 5
         elsif (@ConfigFile == nil)
-          logErr 'You must specify a config file.'
-          logErr @Options
+          log_err 'You must specify a config file.'
+          log_err @Options
           rErrorCode = 6
         else
           @Conf = nil
@@ -114,30 +114,30 @@ module StatsCollect
               @Conf = eval(iFile.read)
             end
           rescue
-            logErr "Invalid configuration file: #{@ConfigFile}"
+            log_err "Invalid configuration file: #{@ConfigFile}"
             rErrorCode = 7
           end
           if (rErrorCode == 0)
             # Get the corresponding notifier
             if (@Conf[:Notifiers][@Notifier] == nil)
-              logErr "Notifier #{@Notifier} has no configuration set up in configuration file #{@ConfigFile}"
+              log_err "Notifier #{@Notifier} has no configuration set up in configuration file #{@ConfigFile}"
               rErrorCode = 8
             else
-              @NotifierInstance, lError = getPluginInstance('Notifiers', @Notifier)
+              @NotifierInstance, lError = get_plugin_instance('Notifiers', @Notifier)
               if (@NotifierInstance == nil)
-                logErr "Unable to instantiate notifier #{@Notifier}: #{lError}"
+                log_err "Unable to instantiate notifier #{@Notifier}: #{lError}"
                 rErrorCode = 9
               else
                 # Will we notify the user of the script execution ?
                 @NotifyUser = true
                 # Get the corresponding backend
                 if (@Conf[:Backends][@Backend] == nil)
-                  logErr "Backend #{@Backend} has no configuration set up in configuration file #{@ConfigFile}"
+                  log_err "Backend #{@Backend} has no configuration set up in configuration file #{@ConfigFile}"
                   rErrorCode = 10
                 else
-                  @BackendInstance, lError = getPluginInstance('Backends', @Backend)
+                  @BackendInstance, lError = get_plugin_instance('Backends', @Backend)
                   if (@BackendInstance == nil)
-                    logErr "Unable to instantiate backend #{@Backend}: #{lError}"
+                    log_err "Unable to instantiate backend #{@Backend}: #{lError}"
                     rErrorCode = 11
                   end
                 end
@@ -152,53 +152,53 @@ module StatsCollect
 
     # Execute the stats collection
     #
-    # Return:
+    # Return::
     # * _Integer_: Error code (given to exit)
     def collect
       rErrorCode = 0
 
       require 'rUtilAnts/Misc'
-      RUtilAnts::Misc::initializeMisc
-      lMutexErrorCode = fileMutex('StatsCollect') do
+      RUtilAnts::Misc::install_misc_on_object
+      lMutexErrorCode = file_mutex('StatsCollect') do
         begin
           # The list of errors
           lLstErrors = []
-          setLogErrorsStack(lLstErrors)
+          set_log_errors_stack(lLstErrors)
           # Collect statistics
-          logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats (PID #{Process.pid})..."
+          log_info "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Begin collecting stats (PID #{Process.pid})..."
           lFoundOrder = false
           lNbrErrors = 0
           setupBackend do
             # Get the stats orders to process
             lStatsOrdersProxy = StatsOrdersProxy.new
-            @BackendInstance.getStatsOrders(lStatsOrdersProxy)
+            @BackendInstance.get_stats_orders(lStatsOrdersProxy)
             lFoundOrder = (!lStatsOrdersProxy.StatsOrders.empty?)
             # Process each stats order
             lStatsOrdersProxy.StatsOrders.each do |iLstIDs, iStatsOrderInfo|
               iTimeStamp, iLstLocations, iLstObjects, iLstCategories, iStatus = iStatsOrderInfo
-              @BackendInstance.dequeueStatsOrders(iLstIDs)
-              logInfo "Dequeued stats order: IDs: #{iLstIDs.join('|')}, Time: #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}"
+              @BackendInstance.dequeue_stats_orders(iLstIDs)
+              log_info "Dequeued stats order: IDs: #{iLstIDs.join('|')}, Time: #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}"
               begin
                 lRecoverableOrders, lUnrecoverableOrders = processOrder(iLstObjects, iLstCategories, iLstLocations)
                 # Add recoverable orders back
                 lRecoverableOrders.each do |iOrderInfo|
                   lNbrErrors += 1
                   iLstRecoverableObjects, iLstRecoverableCategories, iLstRecoverableLocations = iOrderInfo
-                  logInfo "Enqueue recoverable order: Locations: #{iLstRecoverableLocations.join('|')}, Objects: #{iLstRecoverableObjects.join('|')}, Categories: #{iLstRecoverableCategories.join('|')}"
-                  @BackendInstance.putNewStatsOrder(DateTime.now + @Conf[:RecoverableErrorsRetryDelay]/86400.0, iLstRecoverableLocations, iLstRecoverableObjects, iLstRecoverableCategories, STATS_ORDER_STATUS_RECOVERABLE_ERROR)
+                  log_info "Enqueue recoverable order: Locations: #{iLstRecoverableLocations.join('|')}, Objects: #{iLstRecoverableObjects.join('|')}, Categories: #{iLstRecoverableCategories.join('|')}"
+                  @BackendInstance.put_new_stats_order(DateTime.now + @Conf[:RecoverableErrorsRetryDelay]/86400.0, iLstRecoverableLocations, iLstRecoverableObjects, iLstRecoverableCategories, STATS_ORDER_STATUS_RECOVERABLE_ERROR)
                 end
                 # Add unrecoverable orders back
                 lUnrecoverableOrders.each do |iOrderInfo|
                   lNbrErrors += 1
                   iLstUnrecoverableObjects, iLstUnrecoverableCategories, iLstUnrecoverableLocations = iOrderInfo
-                  logInfo "Enqueue unrecoverable order: Locations: #{iLstUnrecoverableLocations.join('|')}, Objects: #{iLstUnrecoverableObjects.join('|')}, Categories: #{iLstUnrecoverableCategories.join('|')}"
-                  @BackendInstance.putNewStatsOrder(iTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
+                  log_info "Enqueue unrecoverable order: Locations: #{iLstUnrecoverableLocations.join('|')}, Objects: #{iLstUnrecoverableObjects.join('|')}, Categories: #{iLstUnrecoverableCategories.join('|')}"
+                  @BackendInstance.put_new_stats_order(iTimeStamp, iLstUnrecoverableLocations, iLstUnrecoverableObjects, iLstUnrecoverableCategories, STATS_ORDER_STATUS_UNRECOVERABLE_ERROR)
                 end
                 @BackendInstance.commit
               rescue Exception
                 lNbrErrors += 1
                 @BackendInstance.rollback
-                logErr "Exception while processing order #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
+                log_err "Exception while processing order #{iTimeStamp}, Locations: #{iLstLocations.join('|')}, Objects: #{iLstObjects.join('|')}, Categories: #{iLstCategories.join('|')}, Status: #{iStatus}: #{$!}.\n#{$!.backtrace.join("\n")}\n"
                 rErrorCode = 14
               end
             end
@@ -206,16 +206,16 @@ module StatsCollect
           if (!lFoundOrder)
             @NotifyUser = false
           end
-          setLogErrorsStack(nil)
+          set_log_errors_stack(nil)
           if (lNbrErrors > 0)
-            logErr "#{lNbrErrors} orders were put in error during processing. Please check logs."
+            log_err "#{lNbrErrors} orders were put in error during processing. Please check logs."
           end
           if (!lLstErrors.empty?)
-            logErr "#{lLstErrors.size} errors were reported. Check log for exact errors."
+            log_err "#{lLstErrors.size} errors were reported. Check log for exact errors."
           end
-          logInfo "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
+          log_info "[#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}] - Stats collection finished."
         rescue Exception
-          logErr "Exception thrown while collecting stats: #{$!}.\n#{$!.backtrace.join("\n")}"
+          log_err "Exception thrown while collecting stats: #{$!}.\n#{$!.backtrace.join("\n")}"
           rErrorCode = 15
           @NotifyUser = true
         end
@@ -230,7 +230,7 @@ module StatsCollect
 
     # Send notifications of a file content if necessary
     #
-    # Parameters:
+    # Parameters::
     # * *iFileName* (_String_): The file containing notifications to be sent
     def notify(iFileName)
       if (@NotifyUser)
@@ -242,19 +242,19 @@ module StatsCollect
         rescue Exception
           lMessage = "Error while reading log file #{iFileName}: #{$!}"
         end
-        @NotifierInstance.sendNotification(@Conf[:Notifiers][@Notifier], lMessage)
+        @NotifierInstance.send_notification(@Conf[:Notifiers][@Notifier], lMessage)
       end
     end
 
     # Enqueue a new stats order
     #
-    # Parameters:
+    # Parameters::
     # * *iLstLocations* (<em>list<String></em>): Locations list (can be empty for all locations)
     # * *iLstObjects* (<em>list<String></em>): Objects list (can be empty for all objects)
     # * *iLstCategories* (<em>list<String></em>): Categories list (can be empty for all categories)
     def pushStatsOrder(iLstLocations, iLstObjects, iLstCategories)
       setupBackend do
-        @BackendInstance.putNewStatsOrder(DateTime.now, iLstLocations, iLstObjects, iLstCategories, STATS_ORDER_STATUS_TOBEPROCESSED)
+        @BackendInstance.put_new_stats_order(DateTime.now, iLstLocations, iLstObjects, iLstCategories, STATS_ORDER_STATUS_TOBEPROCESSED)
       end
     end
 
@@ -263,31 +263,31 @@ module StatsCollect
     # Call some code initializing backend before and ensuring it will be closed after.
     # This method is re-entrant.
     #
-    # Parameters:
+    # Parameters::
     # * _CodeBlock_: the code to be called
     def setupBackend
       lBackendInitHere = false
       if (!@BackendInit)
-        @BackendInstance.initSession(@Conf[:Backends][@Backend])
+        @BackendInstance.init_session(@Conf[:Backends][@Backend])
         @BackendInit = true
         lBackendInitHere = true
       end
       yield
       if (lBackendInitHere)
-        @BackendInstance.closeSession
+        @BackendInstance.close_session
         @BackendInit = false
       end
     end
 
     # Process an order
     #
-    # Parameters:
+    # Parameters::
     # * *iObjectsList* (<em>list<String></em>): List of objects to filter (can be empty for all)
     # * *iCategoriesList* (<em>list<String></em>): List of categories to filter (can be empty for all)
     # * *iLocationsList* (<em>list<String></em>): List of locations to filter (can be empty for all)
-    # Return:
-    # * <em>list<[list<String>,list<String>,list<String>]></em>: The list of orders (objects, categories, locations) that could not be performed due to recoverable errors
-    # * <em>list<[list<String>,list<String>,list<String>]></em>: The list of orders (objects, categories, locations) that could not be performed due to unrecoverable errors
+    # Return::
+    # * <em>list< [list<String>,list<String>,list<String>] ></em>: The list of orders (objects, categories, locations) that could not be performed due to recoverable errors
+    # * <em>list< [list<String>,list<String>,list<String>] ></em>: The list of orders (objects, categories, locations) that could not be performed due to unrecoverable errors
     def processOrder(iObjectsList, iCategoriesList, iLocationsList)
       rRecoverableOrders = []
       rUnrecoverableOrders = []
@@ -295,7 +295,7 @@ module StatsCollect
       # For each location, call the relevant plugin
       lPlugins = []
       if (iLocationsList.empty?)
-        lPlugins = getPluginNames('Locations')
+        lPlugins = get_plugins_names('Locations')
       else
         lPlugins = iLocationsList
       end
@@ -305,15 +305,15 @@ module StatsCollect
         if (@Conf[:Locations] != nil)
           lPluginConf = @Conf[:Locations][iPluginName]
         end
-        lPlugin, lError = getPluginInstance('Locations', iPluginName)
+        lPlugin, lError = get_plugin_instance('Locations', iPluginName)
         if (lError == nil)
           # Ask the plugin to perform the order
           lStatsProxy = StatsProxy.new(iObjectsList, iCategoriesList, @BackendInstance, iPluginName)
-          logInfo "===== Call Location plugin #{iPluginName} to perform order..."
+          log_info "===== Call Location plugin #{iPluginName} to perform order..."
           begin
             lPlugin.execute(lStatsProxy, lPluginConf, iObjectsList, iCategoriesList)
           rescue Exception
-            logErr "Exception thrown during plugin #{iPluginName} execution: #{$!}.\n#{$!.backtrace.join("\n")}"
+            log_err "Exception thrown during plugin #{iPluginName} execution: #{$!}.\n#{$!.backtrace.join("\n")}"
             lErrorPlugins << iPluginName
             lError = true
           end
@@ -343,9 +343,9 @@ module StatsCollect
               end
             end
           end
-          logInfo ''
+          log_info ''
         else
-          logErr "Error while instantiating Location plugin #{iPluginName}: #{$!}."
+          log_err "Error while instantiating Location plugin #{iPluginName}: #{$!}."
           lErrorPlugins << iPluginName
         end
       end
@@ -360,10 +360,10 @@ module StatsCollect
     # Both lists can be empty to indicate all possible names.
     # This method returns the intersection of both lists.
     #
-    # Parameters:
+    # Parameters::
     # * *iLst1* (<em>list<String></em>): The first list
     # * *iLst2* (<em>list<String></em>): The second list
-    # Return:
+    # Return::
     # * <em>list<String></em>: The resulting list. Can be empty for all possible names, or nil for no name.
     def intersectLists(iLst1, iLst2)
       rLstIntersection = nil
@@ -398,8 +398,8 @@ module StatsCollect
     # Write stats in the database.
     # Apply some filter before.
     #
-    # Parameters:
-    # * *iStatsToAdd* (<em>list<[TimeStamp,Object,Category,Value]></em>): The stats to write in the DB
+    # Parameters::
+    # * *iStatsToAdd* (<em>list< [TimeStamp,Object,Category,Value] ></em>): The stats to write in the DB
     # * *iLstObjects* (<em>list<String></em>): The filtering objects to write (can be empty for all)
     # * *iLstCategories* (<em>list<String></em>): The filtering categories to write (can be empty for all)
     def writeStats(iStatsToAdd, iLstObjects, iLstCategories)
@@ -429,15 +429,15 @@ module StatsCollect
 
       # Write stats if there are some
       if (lStatsToBeCommitted.empty?)
-        logInfo 'No stats to be written after filtering.'
+        log_info 'No stats to be written after filtering.'
       else
         # Get the current locations from the DB to know if our location exists
-        lKnownLocations = @BackendInstance.getKnownLocations
+        lKnownLocations = @BackendInstance.get_known_locations
         # Get the list of categories, sorted by category name
-        lKnownCategories = @BackendInstance.getKnownCategories
+        lKnownCategories = @BackendInstance.get_known_categories
         # Get the list of objects, sorted by object name
         # This map will eventually be completed if new objects are found among the stats to write.
-        lKnownObjects = @BackendInstance.getKnownObjects
+        lKnownObjects = @BackendInstance.get_known_objects
         # Use the following to generate a RB file that can be used with RB plugin.
         if false
           lStrStats = []
@@ -455,8 +455,8 @@ module StatsCollect
           lLocationID = lKnownLocations[iLocation]
           if (lLocationID == nil)
             # First create the new location and get its ID
-            logInfo "Creating new location: #{iLocation}"
-            lLocationID = @BackendInstance.addLocation(iLocation)
+            log_info "Creating new location: #{iLocation}"
+            lLocationID = @BackendInstance.add_location(iLocation)
             lKnownLocations[iLocation] = lLocationID
             lCheckExistence = false
           end
@@ -464,9 +464,9 @@ module StatsCollect
           lValueType = nil
           lCategoryID = nil
           if (lKnownCategories[iCategory] == nil)
-            logWarn "Unknown stats category given by location #{iLocation}: #{iCategory}. It will be created with an Unknown value type."
+            log_warn "Unknown stats category given by location #{iLocation}: #{iCategory}. It will be created with an Unknown value type."
             lValueType = STATS_VALUE_TYPE_UNKNOWN
-            lCategoryID = @BackendInstance.addCategory(iCategory, lValueType)
+            lCategoryID = @BackendInstance.add_category(iCategory, lValueType)
             lKnownCategories[iCategory] = [ lCategoryID, lValueType ]
             lCheckExistence = false
           else
@@ -475,27 +475,27 @@ module StatsCollect
           # Check if we need to create the corresponding object
           lObjectID = lKnownObjects[iObject]
           if (lObjectID == nil)
-            logInfo "Creating new object: #{iObject}"
-            lObjectID = @BackendInstance.addObject(iObject)
+            log_info "Creating new object: #{iObject}"
+            lObjectID = @BackendInstance.add_object(iObject)
             lKnownObjects[iObject] = lObjectID
             lCheckExistence = false
           end
           # First, we ensure that this stats does not exist if we don't want duplicates
           lAdd = true
           if (lCheckExistence)
-            lExistingValue = @BackendInstance.getStat(iTimeStamp, lLocationID, lObjectID, lCategoryID, lValueType)
+            lExistingValue = @BackendInstance.get_stat(iTimeStamp, lLocationID, lObjectID, lCategoryID, lValueType)
             if (lExistingValue != nil)
-              logWarn "Stat value for #{iTimeStamp.strftime('%Y-%m-%d %H:%M:%S')}, Location: #{lLocationID}, Object: #{lObjectID}, Category: #{lCategoryID} already exists with value #{lExistingValue}. Will not duplicate it."
+              log_warn "Stat value for #{iTimeStamp.strftime('%Y-%m-%d %H:%M:%S')}, Location: #{lLocationID}, Object: #{lObjectID}, Category: #{lCategoryID} already exists with value #{lExistingValue}. Will not duplicate it."
               lAdd = false
             end
           end
           if (lAdd)
             # Add the stat
-            @BackendInstance.addStat(iTimeStamp, lLocationID, lObjectID, lCategoryID, iValue, lValueType)
-            logDebug "Added stat: Time: #{iTimeStamp}, Location: #{iLocation} (#{lLocationID}), Object: #{iObject} (#{lObjectID}), Category: #{iCategory} (#{lCategoryID}), Value: #{iValue}"
+            @BackendInstance.add_stat(iTimeStamp, lLocationID, lObjectID, lCategoryID, iValue, lValueType)
+            log_debug "Added stat: Time: #{iTimeStamp}, Location: #{iLocation} (#{lLocationID}), Object: #{iObject} (#{lObjectID}), Category: #{iCategory} (#{lCategoryID}), Value: #{iValue}"
           end
         end
-        logInfo "#{lStatsToBeCommitted.size} stats added."
+        log_info "#{lStatsToBeCommitted.size} stats added."
       end
     end
 

@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -30,36 +30,36 @@ module StatsCollect
         lLoginForm.Password = iConf[:LoginPassword]
         # Submit to get to the home page
         lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first)
-        if (oStatsProxy.isObjectIncluded?('Global'))
-          if (oStatsProxy.isCategoryIncluded?('Comments'))
+        if (oStatsProxy.is_object_included?('Global'))
+          if (oStatsProxy.is_category_included?('Comments'))
             getProfile(oStatsProxy, lMechanizeAgent)
           end
-          if ((oStatsProxy.isCategoryIncluded?('Friends')) or
-              (oStatsProxy.isCategoryIncluded?('Visits')))
+          if ((oStatsProxy.is_category_included?('Friends')) or
+              (oStatsProxy.is_category_included?('Visits')))
             getDashboard(oStatsProxy, lMechanizeAgent)
           end
-          if (oStatsProxy.isCategoryIncluded?('Friends list'))
+          if (oStatsProxy.is_category_included?('Friends list'))
             getFriendsList(oStatsProxy, lMechanizeAgent)
           end
         end
-        if (oStatsProxy.isCategoryIncluded?('Song plays'))
+        if (oStatsProxy.is_category_included?('Song plays'))
           getSongs(oStatsProxy, lMechanizeAgent)
         end
-        if ((oStatsProxy.isCategoryIncluded?('Video plays')) or
-            (oStatsProxy.isCategoryIncluded?('Video comments')) or
-            (oStatsProxy.isCategoryIncluded?('Video likes')) or
-            (oStatsProxy.isCategoryIncluded?('Video rating')))
+        if ((oStatsProxy.is_category_included?('Video plays')) or
+            (oStatsProxy.is_category_included?('Video comments')) or
+            (oStatsProxy.is_category_included?('Video likes')) or
+            (oStatsProxy.is_category_included?('Video rating')))
           getVideos(oStatsProxy, lMechanizeAgent)
         end
-        if ((oStatsProxy.isCategoryIncluded?('Blog reads')) or
-            (oStatsProxy.isCategoryIncluded?('Blog likes')))
+        if ((oStatsProxy.is_category_included?('Blog reads')) or
+            (oStatsProxy.is_category_included?('Blog likes')))
           getBlogs(oStatsProxy, lMechanizeAgent, iConf)
         end
       end
 
       # Get the profile statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getProfile(oStatsProxy, iMechanizeAgent)
@@ -68,12 +68,12 @@ module StatsCollect
         # Screen scrap it
         lNbrComments = Integer(lProfilePage.root.css('article#module18 div.wrapper section.content div.commentContainer a.moreComments span.cnt').first.content.match(/of (\d*)/)[1])
 
-        oStatsProxy.addStat('Global', 'Comments', lNbrComments)
+        oStatsProxy.add_stat('Global', 'Comments', lNbrComments)
       end
 
       # Get the dashboard statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getDashboard(oStatsProxy, iMechanizeAgent)
@@ -81,8 +81,8 @@ module StatsCollect
         lJSonData = eval(iMechanizeAgent.get_file('http://www.myspace.com/stats/fans_json/profile_stats/en-US/x=0').gsub(':','=>'))
         lNbrVisits = Integer(lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_views') }.first[-1].gsub(',',''))
         lNbrFriends = Integer(lJSonData['data'].select { |iItem| next (iItem[0] == 'myspace_friends') }.first[-1].gsub(',',''))
-        oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
-        oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+        oStatsProxy.add_stat('Global', 'Visits', lNbrVisits)
+        oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
 
         # OLD VERSION (keeping it as Myspace changes all the time
 #        lDashboardPage = iMechanizeAgent.get('http://www.myspace.com/music/dashboard')
@@ -99,21 +99,21 @@ module StatsCollect
 #          end
 #        end
 #        if (lCoreUserID == nil)
-#          logErr "Unable to find the core user ID: #{lDashboardPage.root}"
+#          log_err "Unable to find the core user ID: #{lDashboardPage.root}"
 #        else
 #          # Call the Ajax script
 #          lStatsAjaxContent = iMechanizeAgent.get_file("http://www.myspace.com/Modules/Music/Handlers/Dashboard.ashx?sourceApplication=#{lAppID}&pkey=#{lPKey}&action=GETCORESTATS&userID=#{lCoreUserID}")
 #          lStrVisits, lStrFriends = lStatsAjaxContent.match(/^\{'totalprofileviews':'([^']*)','totalfriends':'([^']*)'/)[1..2]
 #          lNbrVisits = Integer(lStrVisits.delete(','))
 #          lNbrFriends = Integer(lStrFriends.delete(','))
-#          oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
-#          oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+#          oStatsProxy.add_stat('Global', 'Visits', lNbrVisits)
+#          oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
 #        end
       end
 
       # Get the songs statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getSongs(oStatsProxy, iMechanizeAgent)
@@ -132,19 +132,19 @@ module StatsCollect
           end
           lPlaysNode = iSongNode.children[11]
           if (lPlaysNode == nil)
-            logErr "Unable to find plays node: #{iSongNode}"
+            log_err "Unable to find plays node: #{iSongNode}"
           else
             begin
               lNbrPlays = Integer(lPlaysNode.content)
             rescue Exception
-              logErr "Invalid number of plays content: #{lPlaysNode}"
+              log_err "Invalid number of plays content: #{lPlaysNode}"
             end
           end
           if (lSongTitle == nil)
-            logErr "Unable to get the song title: #{iSongNode}"
+            log_err "Unable to get the song title: #{iSongNode}"
           end
           if (lNbrPlays == nil)
-            logErr "Unable to get the song number of plays: #{iSongNode}"
+            log_err "Unable to get the song number of plays: #{iSongNode}"
             if (lSongTitle != nil)
               # We can try this one again
               lLstRecoverableObjectsForSongPlays << lSongTitle
@@ -152,19 +152,19 @@ module StatsCollect
           end
           if ((lSongTitle != nil) and
               (lNbrPlays != nil))
-            oStatsProxy.addStat(lSongTitle, 'Song plays', lNbrPlays)
+            oStatsProxy.add_stat(lSongTitle, 'Song plays', lNbrPlays)
           end
           lLstSongsPlayRead << lSongTitle
         end
-        logDebug "#{lLstSongsPlayRead.size} songs read for songs plays: #{lLstSongsPlayRead.join(', ')}"
+        log_debug "#{lLstSongsPlayRead.size} songs read for songs plays: #{lLstSongsPlayRead.join(', ')}"
         if (!lLstRecoverableObjectsForSongPlays.empty?)
-          oStatsProxy.addRecoverableOrder(lLstRecoverableObjectsForSongPlays, ['Song plays'])
+          oStatsProxy.add_recoverable_order(lLstRecoverableObjectsForSongPlays, ['Song plays'])
         end
       end
       
       # Get the videos statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getVideos(oStatsProxy, iMechanizeAgent)
@@ -181,18 +181,18 @@ module StatsCollect
           lMatch = lStatsNodes[3].content.match(/^(\d*)% \((\d*) vote/)
           lRating = Integer(lMatch[1])
           lNbrLikes = Integer(lMatch[2])
-          oStatsProxy.addStat(lVideoTitle, 'Video plays', lNbrPlays)
-          oStatsProxy.addStat(lVideoTitle, 'Video comments', lNbrComments)
-          oStatsProxy.addStat(lVideoTitle, 'Video likes', lNbrLikes)
-          oStatsProxy.addStat(lVideoTitle, 'Video rating', lRating)
+          oStatsProxy.add_stat(lVideoTitle, 'Video plays', lNbrPlays)
+          oStatsProxy.add_stat(lVideoTitle, 'Video comments', lNbrComments)
+          oStatsProxy.add_stat(lVideoTitle, 'Video likes', lNbrLikes)
+          oStatsProxy.add_stat(lVideoTitle, 'Video rating', lRating)
           lLstVideosRead << lVideoTitle
         end
-        logDebug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
+        log_debug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
       end
 
       # Get the blogs statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration
@@ -214,16 +214,16 @@ module StatsCollect
           if (!lStrReads.empty?)
             lNbrReads = Integer(lStrReads.match(/\((\d*)\)/)[1])
           end
-          oStatsProxy.addStat(lBlogTitle, 'Blog likes', lNbrLikes)
-          oStatsProxy.addStat(lBlogTitle, 'Blog reads', lNbrReads)
+          oStatsProxy.add_stat(lBlogTitle, 'Blog likes', lNbrLikes)
+          oStatsProxy.add_stat(lBlogTitle, 'Blog reads', lNbrReads)
           lLstBlogsRead << lBlogTitle
         end
-        logDebug "#{lLstBlogsRead.size} blogs read: #{lLstBlogsRead.join(', ')}"
+        log_debug "#{lLstBlogsRead.size} blogs read: #{lLstBlogsRead.join(', ')}"
       end
 
       # Get the friends list
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getFriendsList(oStatsProxy, iMechanizeAgent)
@@ -242,7 +242,7 @@ module StatsCollect
               iFriendNode.css('div div.vcard span.hcard a.nickname').each do |iFriendLinkNode|
                 lFriendName = iFriendLinkNode['href'][1..-1]
                 if (lFriendName == nil)
-                  logErr "Could not get friend's name for ID #{lFriendID}: #{iFriendLinkNode}"
+                  log_err "Could not get friend's name for ID #{lFriendID}: #{iFriendLinkNode}"
                 end
                 lFriendsMap[lFriendID] = lFriendName
               end
@@ -265,7 +265,7 @@ module StatsCollect
             lIdxPage += 1
           end
         end
-        oStatsProxy.addStat('Global', 'Friends list', lFriendsMap)
+        oStatsProxy.add_stat('Global', 'Friends list', lFriendsMap)
       end
 
     end

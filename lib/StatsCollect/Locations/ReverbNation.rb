@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -29,28 +29,28 @@ module StatsCollect
         lHomePage = lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first)
         # Get the user id, as it will be necessary for further requests
         lUserID = lHomePage.uri.to_s.match(/^http:\/\/www\.reverbnation\.com\/artist\/control_room\/(\d*)$/)[1]
-        if ((oStatsProxy.isCategoryIncluded?('Song plays')) or
-            (oStatsProxy.isCategoryIncluded?('Song downloads')) or
-            (oStatsProxy.isCategoryIncluded?('Song play ratio')) or
-            (oStatsProxy.isCategoryIncluded?('Song likes')) or
-            (oStatsProxy.isCategoryIncluded?('Song dislikes')))
+        if ((oStatsProxy.is_category_included?('Song plays')) or
+            (oStatsProxy.is_category_included?('Song downloads')) or
+            (oStatsProxy.is_category_included?('Song play ratio')) or
+            (oStatsProxy.is_category_included?('Song likes')) or
+            (oStatsProxy.is_category_included?('Song dislikes')))
           getPlays(oStatsProxy, lMechanizeAgent, lUserID)
         end
-        if (oStatsProxy.isCategoryIncluded?('Video plays'))
+        if (oStatsProxy.is_category_included?('Video plays'))
           getVideos(oStatsProxy, lMechanizeAgent, lUserID)
         end
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            ((oStatsProxy.isCategoryIncluded?('Chart position genre')) or
-             (oStatsProxy.isCategoryIncluded?('Chart position global')) or
-             (oStatsProxy.isCategoryIncluded?('Band equity')) or
-             (oStatsProxy.isCategoryIncluded?('Friends'))))
+        if ((oStatsProxy.is_object_included?('Global')) and
+            ((oStatsProxy.is_category_included?('Chart position genre')) or
+             (oStatsProxy.is_category_included?('Chart position global')) or
+             (oStatsProxy.is_category_included?('Band equity')) or
+             (oStatsProxy.is_category_included?('Friends'))))
           getReport(oStatsProxy, lMechanizeAgent, lUserID)
         end
       end
 
       # Get the plays statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iUserID* (_String_): The ReverbNation user ID
@@ -69,19 +69,19 @@ module StatsCollect
           lMatch = lNodeContents[6].content.match(/^(\d*)\/(\d*)$/)
           lNbrLikes = Integer(lMatch[1])
           lNbrDislikes = Integer(lMatch[2])
-          oStatsProxy.addStat(lSongTitle, 'Song plays', lNbrSongPlays)
-          oStatsProxy.addStat(lSongTitle, 'Song downloads', lNbrSongDownloads)
-          oStatsProxy.addStat(lSongTitle, 'Song play ratio', lPlayRatio)
-          oStatsProxy.addStat(lSongTitle, 'Song likes', lNbrLikes)
-          oStatsProxy.addStat(lSongTitle, 'Song dislikes', lNbrDislikes)
+          oStatsProxy.add_stat(lSongTitle, 'Song plays', lNbrSongPlays)
+          oStatsProxy.add_stat(lSongTitle, 'Song downloads', lNbrSongDownloads)
+          oStatsProxy.add_stat(lSongTitle, 'Song play ratio', lPlayRatio)
+          oStatsProxy.add_stat(lSongTitle, 'Song likes', lNbrLikes)
+          oStatsProxy.add_stat(lSongTitle, 'Song dislikes', lNbrDislikes)
           lLstSongsRead << lSongTitle
         end
-        logDebug "#{lLstSongsRead.size} songs read: #{lLstSongsRead.join(', ')}"
+        log_debug "#{lLstSongsRead.size} songs read: #{lLstSongsRead.join(', ')}"
       end
 
       # Get the videos statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iUserID* (_String_): The ReverbNation user ID
@@ -95,15 +95,15 @@ module StatsCollect
           lNodeContents = iSongNode.css('td')
           lVideoTitle = lNodeContents[1].children[0].content
           lNbrVideoPlays = Integer(lNodeContents[3].content)
-          oStatsProxy.addStat(lVideoTitle, 'Video plays', lNbrVideoPlays)
+          oStatsProxy.add_stat(lVideoTitle, 'Video plays', lNbrVideoPlays)
           lLstVideosRead << lVideoTitle
         end
-        logDebug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
+        log_debug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
       end
 
       # Get the report statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iUserID* (_String_): The ReverbNation user ID
@@ -127,7 +127,7 @@ module StatsCollect
           end
         end
         if (lChartPositionGenre == nil)
-          logErr "Unable to get the chart positions: #{lReportPage.root}"
+          log_err "Unable to get the chart positions: #{lReportPage.root}"
         else
           lBandEquityScore = nil
           lNbrFriends = nil
@@ -146,14 +146,14 @@ module StatsCollect
             end
           end
           if (lBandEquityScore == nil)
-            logErr "Unable to get the band equity score: #{lReportPage.root}"
+            log_err "Unable to get the band equity score: #{lReportPage.root}"
           elsif (lNbrFriends == nil)
-            logErr "Unable to get the number of friends: #{lReportPage.root}"
+            log_err "Unable to get the number of friends: #{lReportPage.root}"
           else
-            oStatsProxy.addStat('Global', 'Chart position genre', lChartPositionGenre)
-            oStatsProxy.addStat('Global', 'Chart position global', lChartPositionGlobal)
-            oStatsProxy.addStat('Global', 'Band equity', lBandEquityScore)
-            oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+            oStatsProxy.add_stat('Global', 'Chart position genre', lChartPositionGenre)
+            oStatsProxy.add_stat('Global', 'Chart position global', lChartPositionGlobal)
+            oStatsProxy.add_stat('Global', 'Band equity', lBandEquityScore)
+            oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
           end
         end
       end

@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -18,7 +18,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -35,10 +35,10 @@ module StatsCollect
           lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
         end
         iConf[:Objects].each do |iGroupName|
-          if (oStatsProxy.isCategoryIncluded?('Friends'))
+          if (oStatsProxy.is_category_included?('Friends'))
             getMembers(oStatsProxy, lMechanizeAgent, iGroupName)
           end
-          if (oStatsProxy.isCategoryIncluded?('Friends list'))
+          if (oStatsProxy.is_category_included?('Friends list'))
             getMembersList(oStatsProxy, lMechanizeAgent, iGroupName)
           end
         end
@@ -46,19 +46,19 @@ module StatsCollect
 
       # Get the members statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iGroupName* (_String_): Name of the group to retrieve members from
       def getMembers(oStatsProxy, iMechanizeAgent, iGroupName)
         lMembersPage = iMechanizeAgent.get("http://groups.google.com/group/#{iGroupName}/manage_members?hl=en")
         lNbrFriends = Integer(lMembersPage.root.css('div.mngcontentbox table.membertabs tr td.st b').first.content.match(/All members \((\d*)\)/)[1])
-        oStatsProxy.addStat(iGroupName, 'Friends', lNbrFriends)
+        oStatsProxy.add_stat(iGroupName, 'Friends', lNbrFriends)
       end
 
       # Get the members list
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iGroupName* (_String_): Name of the group to retrieve members from
@@ -79,7 +79,7 @@ module StatsCollect
           when 'owner'
             lStatus = MEMBERSTATUS_OWNER
           else
-            logErr "Unknown member status (#{lStrStatus}) for email #{lEmail}. Will be counted as a member."
+            log_err "Unknown member status (#{lStrStatus}) for email #{lEmail}. Will be counted as a member."
             lStatus = MEMBERSTATS_MEMBER
           end
           lMapMembers[lEmail] = [
@@ -93,7 +93,7 @@ module StatsCollect
               lStrSecond.to_i)
           ]
         end
-        oStatsProxy.addStat(iGroupName, 'Friends list', lMapMembers)
+        oStatsProxy.add_stat(iGroupName, 'Friends list', lMapMembers)
       end
 
     end

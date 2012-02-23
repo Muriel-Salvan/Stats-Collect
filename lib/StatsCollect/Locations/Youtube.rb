@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -30,31 +30,31 @@ module StatsCollect
         else
           lMechanizeAgent.submit(lLoginForm, lLoginForm.buttons.first).meta.first.click
         end
-        if ((oStatsProxy.isCategoryIncluded?('Video plays')) or
-            (oStatsProxy.isCategoryIncluded?('Video likes')) or
-            (oStatsProxy.isCategoryIncluded?('Video dislikes')) or
-            (oStatsProxy.isCategoryIncluded?('Video comments')) or
-            (oStatsProxy.isCategoryIncluded?('Video responses')))
+        if ((oStatsProxy.is_category_included?('Video plays')) or
+            (oStatsProxy.is_category_included?('Video likes')) or
+            (oStatsProxy.is_category_included?('Video dislikes')) or
+            (oStatsProxy.is_category_included?('Video comments')) or
+            (oStatsProxy.is_category_included?('Video responses')))
           getVideos(oStatsProxy, lMechanizeAgent)
         end
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            ((oStatsProxy.isCategoryIncluded?('Visits')) or
-             (oStatsProxy.isCategoryIncluded?('Followers'))))
+        if ((oStatsProxy.is_object_included?('Global')) and
+            ((oStatsProxy.is_category_included?('Visits')) or
+             (oStatsProxy.is_category_included?('Followers'))))
           getOverview(oStatsProxy, lMechanizeAgent)
         end
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            (oStatsProxy.isCategoryIncluded?('Friends')))
+        if ((oStatsProxy.is_object_included?('Global')) and
+            (oStatsProxy.is_category_included?('Friends')))
           getFriends(oStatsProxy, lMechanizeAgent)
         end
-        if ((oStatsProxy.isObjectIncluded?('Global')) and
-            (oStatsProxy.isCategoryIncluded?('Following')))
+        if ((oStatsProxy.is_object_included?('Global')) and
+            (oStatsProxy.is_category_included?('Following')))
           getSubscriptions(oStatsProxy, lMechanizeAgent)
         end
       end
 
       # Get the videos statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getVideos(oStatsProxy, iMechanizeAgent)
@@ -69,19 +69,19 @@ module StatsCollect
           lNbrResponses = Integer(lMetricNodes[2].content.strip)
           lNbrLikes = Integer(lMetricNodes[3].content[0..-2].strip)
           lNbrDislikes = Integer(lMetricNodes[4].content.strip)
-          oStatsProxy.addStat(lVideoTitle, 'Video plays', lNbrPlays)
-          oStatsProxy.addStat(lVideoTitle, 'Video comments', lNbrComments)
-          oStatsProxy.addStat(lVideoTitle, 'Video responses', lNbrResponses)
-          oStatsProxy.addStat(lVideoTitle, 'Video likes', lNbrLikes)
-          oStatsProxy.addStat(lVideoTitle, 'Video dislikes', lNbrDislikes)
+          oStatsProxy.add_stat(lVideoTitle, 'Video plays', lNbrPlays)
+          oStatsProxy.add_stat(lVideoTitle, 'Video comments', lNbrComments)
+          oStatsProxy.add_stat(lVideoTitle, 'Video responses', lNbrResponses)
+          oStatsProxy.add_stat(lVideoTitle, 'Video likes', lNbrLikes)
+          oStatsProxy.add_stat(lVideoTitle, 'Video dislikes', lNbrDislikes)
           lLstVideosRead << lVideoTitle
         end
-        logDebug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
+        log_debug "#{lLstVideosRead.size} videos read: #{lLstVideosRead.join(', ')}"
       end
 
       # Get the overview statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getOverview(oStatsProxy, iMechanizeAgent)
@@ -103,35 +103,35 @@ module StatsCollect
           end
         end
         if (lNbrVisits == nil)
-          logErr "Unable to get number of visits: #{lOverviewPage.content}"
+          log_err "Unable to get number of visits: #{lOverviewPage.content}"
         elsif (lNbrFollowers == nil)
-          logErr "Unable to get number of followers: #{lOverviewPage.content}"
+          log_err "Unable to get number of followers: #{lOverviewPage.content}"
         else
-          oStatsProxy.addStat('Global', 'Visits', lNbrVisits)
-          oStatsProxy.addStat('Global', 'Followers', lNbrFollowers)
+          oStatsProxy.add_stat('Global', 'Visits', lNbrVisits)
+          oStatsProxy.add_stat('Global', 'Followers', lNbrFollowers)
         end
       end
 
       # Get the friends statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getFriends(oStatsProxy, iMechanizeAgent)
         lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=friends')
         lNbrFriends = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
-        oStatsProxy.addStat('Global', 'Friends', lNbrFriends)
+        oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
       end
 
       # Get the friends statistics
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getSubscriptions(oStatsProxy, iMechanizeAgent)
         lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=subscriptions')
         lNbrFollowing = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
-        oStatsProxy.addStat('Global', 'Following', lNbrFollowing)
+        oStatsProxy.add_stat('Global', 'Following', lNbrFollowing)
       end
 
     end

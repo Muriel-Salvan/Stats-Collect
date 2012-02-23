@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -24,23 +24,23 @@ module StatsCollect
         lMechanizeAgent = Mechanize.new
         # Get the number of likes from Facebook
         lErrorObjects = []
-        if (oStatsProxy.isCategoryIncluded?('Likes'))
+        if (oStatsProxy.is_category_included?('Likes'))
           iConf[:Objects].each do |iObject|
-            if (oStatsProxy.isObjectIncluded?(iObject))
+            if (oStatsProxy.is_object_included?(iObject))
               lLikesContent = lMechanizeAgent.get("http://www.facebook.com/plugins/like.php?href=#{iObject}").root.css('span.connect_widget_not_connected_text').first.content.delete(',')
               lMatch = lLikesContent.match(/^(\d*) likes./)
               if (lMatch == nil)
-                logErr "Unable to parse FacebookLike output for object #{iObject}: #{lLikesContent}"
+                log_err "Unable to parse FacebookLike output for object #{iObject}: #{lLikesContent}"
                 lErrorObjects << iObject
               else
                 lNbrLikes = Integer(lMatch[1])
-                oStatsProxy.addStat(iObject, 'Likes', lNbrLikes)
+                oStatsProxy.add_stat(iObject, 'Likes', lNbrLikes)
               end
             end
           end
         end
         if (!lErrorObjects.empty?)
-          oStatsProxy.addUnrecoverableOrder(lErrorObjects, ['Likes'])
+          oStatsProxy.add_unrecoverable_order(lErrorObjects, ['Likes'])
         end
       end
 

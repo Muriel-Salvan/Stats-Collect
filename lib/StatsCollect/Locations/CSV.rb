@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2010 - 2011 Muriel Salvan (murielsalvan@users.sourceforge.net)
+# Copyright (c) 2010 - 2012 Muriel Salvan (muriel@x-aeon.com)
 # Licensed under the terms specified in LICENSE file. No warranty is provided.
 #++
 
@@ -14,7 +14,7 @@ module StatsCollect
       # It can filter only objects and categories given.
       # It has access to its configuration.
       #
-      # Parameters:
+      # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iConf* (<em>map<Symbol,Object></em>): The configuration associated to this plugin
       # * *iLstObjects* (<em>list<String></em>): List of objects to filter (can be empty for all)
@@ -22,9 +22,9 @@ module StatsCollect
       def execute(oStatsProxy, iConf, iLstObjects, iLstCategories)
         if (!iConf[:Files].empty?)
           # Get the list of categories, locations and objects
-          lCategories = oStatsProxy.getCategories
-          lObjects = oStatsProxy.getObjects
-          lLocations = oStatsProxy.getLocations
+          lCategories = oStatsProxy.get_categories
+          lObjects = oStatsProxy.get_objects
+          lLocations = oStatsProxy.get_locations
           lCSVLocations = []
           lCSVObjects = []
           lCSVCategories = []
@@ -38,7 +38,7 @@ module StatsCollect
                 # We have locations in this line
                 iRow[1..-1].each do |iLocationName|
                   if (lLocations[iLocationName] == nil)
-                    logWarn "Unknown location from CSV file #{iFileName}: #{iLocationName}"
+                    log_warn "Unknown location from CSV file #{iFileName}: #{iLocationName}"
                     lMissingIDs = true
                   end
                   lCSVLocations << iLocationName
@@ -47,7 +47,7 @@ module StatsCollect
                 # We have objects in this line
                 iRow[1..-1].each do |iObjectName|
                   if (lObjects[iObjectName] == nil)
-                    logWarn "Unknown object from CSV file #{iFileName}: #{iObjectName}"
+                    log_warn "Unknown object from CSV file #{iFileName}: #{iObjectName}"
                     lMissingIDs = true
                   end
                   lCSVObjects << iObjectName
@@ -56,7 +56,7 @@ module StatsCollect
                 # We have categories in this line
                 iRow[1..-1].each do |iCategoryName|
                   if (lCategories[iCategoryName] == nil)
-                    logWarn "Unknown category from CSV file #{iFileName}: #{iCategoryName}"
+                    log_warn "Unknown category from CSV file #{iFileName}: #{iCategoryName}"
                     lMissingIDs = true
                   end
                   lCSVCategories << iCategoryName
@@ -89,7 +89,7 @@ module StatsCollect
                     else
                       raise RuntimeError.new("Unknown value type for category #{lCSVCategories[iIdx]}: #{lValueType}")
                     end
-                    oStatsProxy.addStat(lCSVObjects[iIdx], lCSVCategories[iIdx], lValue, :Timestamp => lTimestamp, :Location => lCSVLocations[iIdx])
+                    oStatsProxy.add_stat(lCSVObjects[iIdx], lCSVCategories[iIdx], lValue, :Timestamp => lTimestamp, :Location => lCSVLocations[iIdx])
                   end
                 end
               end
