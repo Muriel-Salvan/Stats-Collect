@@ -66,14 +66,14 @@ module StatsCollect
           lNbrSongPlays = Integer(lNodeContents[3].content)
           lNbrSongDownloads = Integer(lNodeContents[4].content)
           lPlayRatio = Integer(lNodeContents[5].content.match(/^(\d*)%$/)[1])
-          lMatch = lNodeContents[6].content.match(/^(\d*)\/(\d*)$/)
-          lNbrLikes = Integer(lMatch[1])
-          lNbrDislikes = Integer(lMatch[2])
+#          lMatch = lNodeContents[6].content.match(/^(\d*)\/(\d*)$/)
+#          lNbrLikes = Integer(lMatch[1])
+#          lNbrDislikes = Integer(lMatch[2])
           oStatsProxy.add_stat(lSongTitle, 'Song plays', lNbrSongPlays)
           oStatsProxy.add_stat(lSongTitle, 'Song downloads', lNbrSongDownloads)
           oStatsProxy.add_stat(lSongTitle, 'Song play ratio', lPlayRatio)
-          oStatsProxy.add_stat(lSongTitle, 'Song likes', lNbrLikes)
-          oStatsProxy.add_stat(lSongTitle, 'Song dislikes', lNbrDislikes)
+#          oStatsProxy.add_stat(lSongTitle, 'Song likes', lNbrLikes)
+#          oStatsProxy.add_stat(lSongTitle, 'Song dislikes', lNbrDislikes)
           lLstSongsRead << lSongTitle
         end
         log_debug "#{lLstSongsRead.size} songs read: #{lLstSongsRead.join(', ')}"

@@ -5,27 +5,27 @@
 
 RubyPackager::ReleaseInfo.new.
   author(
-    :Name => 'Muriel Salvan',
-    :EMail => 'muriel@x-aeon.com',
-    :WebPageURL => 'http://murielsalvan.users.sourceforge.net'
+    :name => 'Muriel Salvan',
+    :email => 'muriel@x-aeon.com',
+    :web_page_url => 'http://murielsalvan.users.sourceforge.net'
   ).
   project(
-    :Name => 'StatsCollect',
-    :WebPageURL => 'http://statscollect.sourceforge.net/',
-    :Summary => 'Command line tool gathering statistics from external sources.',
-    :Description => 'StatsCollect is a little framework gathering statistics from external sources (social networks, web sites...), stored in pluggable backends. It can be very easily extended thanks to its plugins (currently include Facebook, Myspace, Youtube, Google).',
-    :ImageURL => 'http://statscollect.sourceforge.net/wiki/images/c/c9/Logo.jpg',
-    :FaviconURL => 'http://statscollect.sourceforge.net/wiki/images/2/26/Favicon.png',
-    :SVNBrowseURL => 'http://statscollect.git.sourceforge.net/',
-    :DevStatus => 'Beta'
+    :name => 'StatsCollect',
+    :web_page_url => 'http://statscollect.sourceforge.net/',
+    :summary => 'Command line tool gathering statistics from external sources.',
+    :description => 'StatsCollect is a little framework gathering statistics from external sources (social networks, web sites...), stored in pluggable backends. It can be very easily extended thanks to its plugins (currently include Facebook, Myspace, Youtube, Google).',
+    :image_url => 'http://statscollect.sourceforge.net/wiki/images/c/c9/Logo.jpg',
+    :favicon_url => 'http://statscollect.sourceforge.net/wiki/images/2/26/Favicon.png',
+    :browse_source_url => 'http://statscollect.git.sourceforge.net/',
+    :dev_status => 'Beta'
   ).
-  addCoreFiles( [
+  add_core_files( [
     '{lib,bin}/**/*'
   ] ).
-#  addTestFiles( [
+#  add_test_files( [
 #    'test/**/*'
 #  ] ).
-  addAdditionalFiles( [
+  add_additional_files( [
     'README',
     'LICENSE',
     'AUTHORS',
@@ -34,19 +34,19 @@ RubyPackager::ReleaseInfo.new.
     '*.example'
   ] ).
   gem(
-    :GemName => 'StatsCollect',
-    :GemPlatformClassName => 'Gem::Platform::RUBY',
-    :RequirePath => 'lib',
-    :HasRDoc => true
-#    :TestFile => 'test/run.rb'
+    :gem_name => 'StatsCollect',
+    :gem_platform_class_name => 'Gem::Platform::RUBY',
+    :require_path => 'lib',
+    :has_rdoc => true
+#    :test_file => 'test/run.rb'
   ).
-  sourceForge(
-    :Login => 'murielsalvan',
-    :ProjectUnixName => 'statscollect'
+  source_forge(
+    :login => 'murielsalvan',
+    :project_unix_name => 'statscollect'
   ).
-  rubyForge(
-    :ProjectUnixName => 'statscollect'
+  ruby_forge(
+    :project_unix_name => 'statscollect'
   ).
   executable(
-    :StartupRBFile => 'bin/StatsCollect.rb'
+    :startup_rb_file => 'bin/StatsCollect.rb'
   )

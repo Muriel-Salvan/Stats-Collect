@@ -26,7 +26,7 @@ module StatsCollect
             require 'mechanize'
             lMechanizeAgent = Mechanize.new
             lProfilePage = lMechanizeAgent.get("http://www.google.com/search?q=#{URI.escape(iObject)}")
-            lNbrSearchResults = Integer(lProfilePage.root.css('div#resultStats').first.content.delete(',').strip.match(/ (\d*) /)[1])
+            lNbrSearchResults = Integer(lProfilePage.root.css('div#subform_ctrl div')[1].content.delete(',').strip.match(/ (\d*) /)[1])
             oStatsProxy.add_stat(iObject, 'Search results', lNbrSearchResults)
           end
         end

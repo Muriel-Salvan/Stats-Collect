@@ -63,7 +63,7 @@ module StatsCollect
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       # * *iGroupName* (_String_): Name of the group to retrieve members from
       def getMembersList(oStatsProxy, iMechanizeAgent, iGroupName)
-        lExportForm = iMechanizeAgent.get("http://groups.google.com/group/#{iGroupName}/manage_members?hl=en").forms[4]
+        lExportForm = iMechanizeAgent.get("http://groups.google.com/group/#{iGroupName}/manage_members?hl=en").forms[6]
         lLstMembers = iMechanizeAgent.submit(lExportForm, lExportForm.buttons.first).content.split("\n")[2..-1]
         # The map of members
         # map< Name, [ MemberStatus, JoinDateTime ] >

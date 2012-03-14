@@ -43,10 +43,6 @@ module StatsCollect
           getOverview(oStatsProxy, lMechanizeAgent)
         end
         if ((oStatsProxy.is_object_included?('Global')) and
-            (oStatsProxy.is_category_included?('Friends')))
-          getFriends(oStatsProxy, lMechanizeAgent)
-        end
-        if ((oStatsProxy.is_object_included?('Global')) and
             (oStatsProxy.is_category_included?('Following')))
           getSubscriptions(oStatsProxy, lMechanizeAgent)
         end
@@ -63,15 +59,14 @@ module StatsCollect
         lLstVideosRead = []
         lVideosPage.root.css('li.vm-video-item').each do |iVideoNode|
           lVideoTitle = iVideoNode.css('div.vm-video-title a').first.content
-          lMetricNodes = iVideoNode.css('div.vm-video-metrics dl dd')
-          lNbrPlays = Integer(lMetricNodes[0].css('a').first.content.strip)
-          lNbrComments = Integer(lMetricNodes[1].content.strip)
-          lNbrResponses = Integer(lMetricNodes[2].content.strip)
-          lNbrLikes = Integer(lMetricNodes[3].content[0..-2].strip)
-          lNbrDislikes = Integer(lMetricNodes[4].content.strip)
+          lNbrPlays = Integer(iVideoNode.css('div.vm-video-metrics span.video-view-count span.vm-video-metric-value')[0].content.strip)
+          lNbrLikes = Integer(iVideoNode.css('div.vm-video-metrics span.video-likes-count span.vm-video-metric-value')[0].content.strip)
+          lNbrDislikes = Integer(iVideoNode.css('div.vm-video-metrics span.video-dislikes-count span.vm-video-metric-value')[0].content.strip)
+          lNbrComments = Integer(iVideoNode.css('div.vm-video-metrics span.video-comments span.vm-video-metric-value')[0].content.strip)
+          #lNbrResponses = Integer(lMetricNodes[2].content.strip)
           oStatsProxy.add_stat(lVideoTitle, 'Video plays', lNbrPlays)
           oStatsProxy.add_stat(lVideoTitle, 'Video comments', lNbrComments)
-          oStatsProxy.add_stat(lVideoTitle, 'Video responses', lNbrResponses)
+          #oStatsProxy.add_stat(lVideoTitle, 'Video responses', lNbrResponses)
           oStatsProxy.add_stat(lVideoTitle, 'Video likes', lNbrLikes)
           oStatsProxy.add_stat(lVideoTitle, 'Video dislikes', lNbrDislikes)
           lLstVideosRead << lVideoTitle
@@ -117,20 +112,9 @@ module StatsCollect
       # Parameters::
       # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
       # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
-      def getFriends(oStatsProxy, iMechanizeAgent)
-        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=friends')
-        lNbrFriends = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
-        oStatsProxy.add_stat('Global', 'Friends', lNbrFriends)
-      end
-
-      # Get the friends statistics
-      #
-      # Parameters::
-      # * *oStatsProxy* (_StatsProxy_): The stats proxy to be used to populate stats
-      # * *iMechanizeAgent* (_Mechanize_): The agent reading pages
       def getSubscriptions(oStatsProxy, iMechanizeAgent)
-        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile?view=subscriptions')
-        lNbrFollowing = Integer(lOverviewPage.root.xpath('//span[@name="channel-box-item-count"]').first.content)
+        lOverviewPage = iMechanizeAgent.get('http://www.youtube.com/profile')
+        lNbrFollowing = Integer(lOverviewPage.root.css('div.header-stats span.stat-value').first.content.strip)
         oStatsProxy.add_stat('Global', 'Following', lNbrFollowing)
       end
 
